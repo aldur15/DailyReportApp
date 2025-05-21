@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard</title>
+</head>
+<body>
+  <h2>Welcome</h2>
+  <button id="logout">Logout</button>
+  <div id="report-container"></div>
+
+  <script>
+    const token = localStorage.getItem("token");
+    if (!token) {
+      window.location.href = "index.html"; // redirect to login if not logged in
+    }
+
+    document.getElementById("logout").addEventListener("click", () => {
+      localStorage.removeItem("token");
+      window.location.href = "index.html";
+    });
+
+    async function fetchReports() {
+      const res = await fetch("http://localhost:8000/reports", {
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById("report-container").innerText = JSON.stringify(data, null, 2);
+      } else {
+        alert("Session expired");
+        localStorage.removeItem("token");
+        window.location.href = "index.html";
+      }
+    }
+
+    fetchReports();
+  </script>
+</body>
+</html>
