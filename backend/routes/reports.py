@@ -45,5 +45,5 @@ def create_report(report: schemas.ReportCreate, db: Session = Depends(get_db), u
         report.username = user.name
     if not report.date:
         report.date = datetime.now(timezone.utc)
-    report.user_id = user.id  # <-- ADD THIS
+    #report.user_id = user.id  # <-- ADD THIS
     return crud.create_report(db, report)

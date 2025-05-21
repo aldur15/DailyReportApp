@@ -9,83 +9,79 @@
   <div id="report-container"></div>
 
   <h3>Create Daily Report</h3>
-    <form id="report-form">
+  <form id="report-form">
     <input type="text" id="title" placeholder="Report title" required />
     <br />
-    <textarea id="content" placeholder="What happened today?" required></textarea>
+    <textarea id="summary" placeholder="What happened today?" required></textarea>
     <br />
     <input type="date" id="date" />
-    <input type="text" id="author" placeholder="Your name" />
+    <input type="text" id="username" placeholder="Your name" />
     <br />
     <button type="submit">Submit Report</button>
-    </form>
+  </form>
 
   <script>
-  const token = localStorage.getItem("token");
-  if (!token) {
-    window.location.href = "index.html";
-  }
-
-  document.getElementById("logout").addEventListener("click", () => {
-    localStorage.removeItem("token");
-    window.location.href = "index.html";
-  });
-
-  async function fetchReports() {
-    const res = await fetch("http://localhost:8000/reports", {
-      headers: { Authorization: "Bearer " + token },
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      document.getElementById("report-container").innerText = JSON.stringify(data, null, 2);
-    } else {
-      alert("Session expired");
-      localStorage.removeItem("token");
+    const token = localStorage.getItem("token");
+    if (!token) {
       window.location.href = "index.html";
     }
-  }
 
-  fetchReports();
-
- 
-  document.getElementById("report-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const title = document.getElementById("title").value;
-    const content = document.getElementById("content").value;
-    const date = document.getElementById("date").value;
-    const author = document.getElementById("author").value;
-
-    const res = await fetch("http://localhost:8000/reports", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token,
-      },
-      body: JSON.stringify({
-        title,
-        content,
-        date: date || null,
-        author: author || null,
-      }),
+    document.getElementById("logout").addEventListener("click", () => {
+      localStorage.removeItem("token");
+      window.location.href = "index.html";
     });
 
-    if (res.ok) {
-      alert("Report submitted!");
-      document.getElementById("report-form").reset();
-      fetchReports(); // Refresh list
-    } else {
-      const error = await res.json();
-      alert("Error submitting report: " + error.detail);
+    async function fetchReports() {
+      const res = await fetch("http://localhost:8000/reports", {
+        headers: { Authorization: "Bearer " + token },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById("report-container").innerText = JSON.stringify(data, null, 2);
+      } else {
+        alert("Session expired");
+        localStorage.removeItem("token");
+        window.location.href = "index.html";
+      }
     }
-  });
 
-  // Autofill today’s date
-  document.getElementById("date").valueAsDate = new Date();
-</script>
+    fetchReports();
 
+    document.getElementById("report-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-  
+      const title = document.getElementById("title").value;
+      const summary = document.getElementById("summary").value;
+      const date = document.getElementById("date").value;
+      const username = document.getElementById("username").value;
+
+      const res = await fetch("http://localhost:8000/reports", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+        },
+        body: JSON.stringify({
+          title,
+          summary,
+          date: date || null,
+          username: username || null,
+        }),
+      });
+
+      if (res.ok) {
+        alert("Report submitted!");
+        document.getElementById("report-form").reset();
+        fetchReports(); // Refresh list
+      } else {
+        const error = await res.json();
+        alert("Error submitting report: " + error.detail);
+      }
+    });
+
+    // Autofill today’s date
+    document.getElementById("date").valueAsDate = new Date();
+  </script>
 </body>
 </html>

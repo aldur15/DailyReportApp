@@ -33,4 +33,4 @@ class ReportCreate(BaseModel):
     summary: str
     date: datetime | None = None
     username: str | None = None
-    user_id: int  # <-- add this
+   

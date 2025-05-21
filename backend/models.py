@@ -5,7 +5,6 @@ from .database import Base
 class DailyReport(Base):
     __tablename__ = "daily_reports"
     id = Column(Integer, primary_key=True, index=True)
-    user_id = Column(Integer, nullable=False)
     title = Column(String, nullable=False)
     username = Column(String, nullable=False)
     summary = Column(String, nullable=False)
