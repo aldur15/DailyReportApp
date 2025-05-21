@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from .. import models, crud, schemas, database
 from ..auth import get_current_user
 from ..models import User
+from datetime import datetime
 
 router = APIRouter()
 
@@ -37,16 +38,12 @@ def read_reports(
 ):
     return crud.get_reports(db)
 
+
 @router.post("/reports")
-def create_report(report: schemas.ReportCreate, db: Session = Depends(database.get_db), user=Depends(auth.get_current_user)):
-    db_report = models.Report(
-        title=report.title,
-        content=report.content,
-        date=report.date or datetime.utcnow(),
-        author=report.author or user.name,
-        user_id=user.id
-    )
-    db.add(db_report)
-    db.commit()
-    db.refresh(db_report)
-    return db_report
+def create_report(report: schemas.ReportCreate, db: Session = Depends(get_db), user=Depends(get_current_user)):
+    if not report.username:
+        report.username = user.name
+    if not report.date:
+        report.date = datetime.now(timezone.utc)
+    report.user_id = user.id  # <-- ADD THIS
+    return crud.create_report(db, report)

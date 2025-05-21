@@ -26,3 +26,11 @@ class UserOut(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str
+
+
+class ReportCreate(BaseModel):
+    title: str
+    summary: str
+    date: datetime | None = None
+    username: str | None = None
+    user_id: int  # <-- add this
