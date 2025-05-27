@@ -8,12 +8,12 @@ from backend.database import Base, get_db
 from backend import models
 from backend.auth import pwd_context
 
-# Use an in-memory SQLite DB
+# Use an in-memory SQLite DB for isolated test environment
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# Override FastAPI's get_db dependency
+# Dependency override for the test DB
 def override_get_db():
     db = TestingSessionLocal()
     try:
@@ -25,16 +25,16 @@ app.dependency_overrides[get_db] = override_get_db
 
 @pytest.fixture(scope="module")
 def client():
-    # Create the database schema
+    # Setup: Create tables
     Base.metadata.create_all(bind=engine)
     yield TestClient(app)
+    # Teardown: Drop all tables
     Base.metadata.drop_all(bind=engine)
 
 @pytest.fixture(scope="module", autouse=True)
-def setup_users(client):  # Ensures `client` creates the tables first
+def setup_users(client):
     db = TestingSessionLocal()
-    # Clean slate in case of reruns
-    db.query(models.User).delete()
+    db.query(models.User).delete()  # Clean up if rerunning
     db.add_all([
         models.User(name="admin", hashed_password=pwd_context.hash("admin"), is_admin=True),
         models.User(name="user", hashed_password=pwd_context.hash("password"), is_admin=False),
