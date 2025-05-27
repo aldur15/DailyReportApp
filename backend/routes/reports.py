@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
-from sqlalchemy import Date
+from sqlalchemy import Date, func
 from .. import models, crud, schemas, database
 from ..auth import get_current_user
 from ..models import User
@@ -50,19 +50,22 @@ def search_reports(
     query = db.query(models.DailyReport)
 
     if username:
+        print(f"Filtering by username: {username}")
         query = query.join(models.User).filter(models.User.name.ilike(f"%{username}%"))
 
     if date:
         try:
-            print(f"🔎 Filtering for date: {parsed_date}") 
-
             parsed_date = datetime.strptime(date, "%Y-%m-%d").date()
-            query = query.filter(models.DailyReport.date.cast(Date) == parsed_date)
+            print(f"Filtering for date: {parsed_date}")
+            query = query.filter(func.date(models.DailyReport.date) == parsed_date)
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
 
     if title:
+        print(f"🔎 Filtering by title: {title}")
         query = query.filter(models.DailyReport.title.ilike(f"%{title}%"))
 
-    return query.all()
+    results = query.all()
+    print(f"Found {len(results)} reports")
+    return results
 

@@ -47,8 +47,9 @@ app.include_router(reports.router)
 
 
 #venv\Scripts\activate
+#linux: source venv/bin/activate
 #pip freeze > requirements.txt
 #uvicorn backend.main:app --reload
 #http://127.0.0.1:8000/docs
-                   
+
 
