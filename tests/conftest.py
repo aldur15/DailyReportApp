@@ -8,13 +8,13 @@ from backend.database import Base, get_db
 from backend import models
 from backend.auth import pwd_context
 
-# ✅ Use in-memory SQLite DB
+# Use an in-memory SQLite DB
 SQLALCHEMY_DATABASE_URL = "sqlite:///:memory:"
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, connect_args={"check_same_thread": False})
 TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# ✅ Override get_db to use test session
+# Override FastAPI's get_db dependency
 def override_get_db():
     db = TestingSessionLocal()
     try:
@@ -26,21 +26,20 @@ app.dependency_overrides[get_db] = override_get_db
 
 @pytest.fixture(scope="module")
 def client():
-    # ✅ Recreate tables for every test module
-    Base.metadata.drop_all(bind=engine)
+    # ✅ Create tables before anything else
     Base.metadata.create_all(bind=engine)
-    return TestClient(app)
+    yield TestClient(app)
+    # Optionally drop tables after the module
+    Base.metadata.drop_all(bind=engine)
 
 @pytest.fixture(scope="module", autouse=True)
-def setup_users():
+def setup_users(client):  # client fixture ensures tables are created first
     db = TestingSessionLocal()
-    # ✅ Ensure fresh data
-    db.query(models.User).delete()
-    db.commit()
-
-    db.add(models.User(name="admin", hashed_password=pwd_context.hash("admin"), is_admin=True))
-    db.add(models.User(name="user", hashed_password=pwd_context.hash("password"), is_admin=False))
-    db.add(models.User(name="nonadmin", hashed_password=pwd_context.hash("password"), is_admin=False))
+    db.add_all([
+        models.User(name="admin", hashed_password=pwd_context.hash("admin"), is_admin=True),
+        models.User(name="user", hashed_password=pwd_context.hash("password"), is_admin=False),
+        models.User(name="nonadmin", hashed_password=pwd_context.hash("password"), is_admin=False),
+    ])
     db.commit()
     db.close()
 
