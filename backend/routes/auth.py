@@ -37,7 +37,7 @@ def make_user_admin(
     db: Session = Depends(get_db),
     current_user: models.User = Depends(auth.get_current_user)
 ):
-    if current_user.role != "admin":
+    if current_user.is_admin == False:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only admins can promote users"
@@ -47,10 +47,10 @@ def make_user_admin(
     if not user_to_promote:
         raise HTTPException(status_code=404, detail="User not found")
 
-    if user_to_promote.role == "admin":
+    if user_to_promote.is_admin == True:
         return {"message": f"User '{request.username}' is already an admin"}
 
-    user_to_promote.role = "admin"
+    user_to_promote.is_admin = True
     db.commit()
     return {"message": f"User '{request.username}' has been promoted to admin"}
 
@@ -58,6 +58,4 @@ def make_user_admin(
 def get_current_user_info(
     current_user: models.User = Depends(auth.get_current_user)
 ):
-    #print("✅ /users/me endpoint hit")
-    #print(f"🔐 Authenticated user: ID={current_user.id}, Name={current_user.name}, Role={current_user.role}")
     return current_user

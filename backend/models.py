@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime ,ForeignKey 
+from sqlalchemy import Column, Integer, String, DateTime ,ForeignKey, Boolean
 from datetime import datetime
 from .database import Base
 from sqlalchemy.orm import relationship
@@ -10,7 +10,7 @@ class DailyReport(Base):
     summary = Column(String, nullable=False)
     date = Column(DateTime, default=datetime.utcnow)
     
-    user_id = Column(Integer, ForeignKey("users.id"))  # ✅ foreign key link
+    user_id = Column(Integer, ForeignKey("users.id")) 
     user = relationship("User", back_populates="reports")
 
 
@@ -19,8 +19,8 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True)
     hashed_password = Column(String)
-    role = Column(String, default="user")
+    is_admin = Column(Boolean, default=False)
     
-    reports = relationship("DailyReport", back_populates="user")  # ✅ back ref
+    reports = relationship("DailyReport", back_populates="user") 
 
 

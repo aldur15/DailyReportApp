@@ -39,7 +39,7 @@ def create_access_token(data: dict, expires_delta: timedelta = None):
 
 def get_current_user(
     token: str = Depends(oauth2_scheme),
-    db: Session = Depends(get_db)  # ✅ This is the fix
+    db: Session = Depends(get_db)  
 ):
     from jose import JWTError, jwt
     from fastapi import HTTPException, status

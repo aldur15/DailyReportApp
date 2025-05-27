@@ -63,7 +63,7 @@
 
       if (res.ok) {
         const user = await res.json();
-        if (user.role === "admin") {
+        if (user.is_admin === true) {
           document.getElementById("admin-section").style.display = "block";
           fetchReports(); // Only fetch reports if admin
         }

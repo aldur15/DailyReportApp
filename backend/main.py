@@ -18,7 +18,7 @@ def create_admin():
         admin_user = models.User(
             name="admin",
             hashed_password=pwd_context.hash("admin"),
-            role="admin"
+            is_admin=True
         )
         db.add(admin_user)
         db.commit()

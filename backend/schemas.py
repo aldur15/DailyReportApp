@@ -21,7 +21,7 @@ class UserCreate(BaseModel):
 class UserOut(BaseModel):
     id: int
     name: str
-    role: str  
+    is_admin: bool  
 
     class Config:
         orm_mode = True
