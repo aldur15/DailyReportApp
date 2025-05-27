@@ -1,9 +1,10 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import Date
 from .. import models, crud, schemas, database
 from ..auth import get_current_user
 from ..models import User
-from datetime import datetime
+from datetime import datetime, date as date_type
 
 router = APIRouter()
 
@@ -23,7 +24,7 @@ def create_report(
     user: models.User = Depends(get_current_user)
 ):
     report_data = report.dict()
-    report_data["user_id"] = user.id  # ✅ link by ID
+    report_data["user_id"] = user.id 
     return crud.create_report(db, report_data)
 
 
@@ -35,5 +36,33 @@ def read_reports(db: Session = Depends(get_db)):
 
 
 
+@router.get("/reports/search", response_model=list[schemas.ReportOut])
+def search_reports(
+    username: str = Query(default=None),
+    date: str = Query(default=None),  # accept as string
+    title: str = Query(default=None),
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
+):
+    if not user.is_admin:
+        raise HTTPException(status_code=403, detail="Admin access required")
 
+    query = db.query(models.DailyReport)
+
+    if username:
+        query = query.join(models.User).filter(models.User.name.ilike(f"%{username}%"))
+
+    if date:
+        try:
+            print(f"🔎 Filtering for date: {parsed_date}") 
+
+            parsed_date = datetime.strptime(date, "%Y-%m-%d").date()
+            query = query.filter(models.DailyReport.date.cast(Date) == parsed_date)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+
+    if title:
+        query = query.filter(models.DailyReport.title.ilike(f"%{title}%"))
+
+    return query.all()
 
