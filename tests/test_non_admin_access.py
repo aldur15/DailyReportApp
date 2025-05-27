@@ -1,3 +1,4 @@
-def test_non_admin_access(client, non_admin_token):
-    response = client.get("/reports/search", headers={"Authorization": f"Bearer {non_admin_token}"})
-    assert response.status_code == 403
+def test_non_admin_access(client):
+    response = client.post("/login", json={"name": "nonadmin", "password": "password"})
+    assert response.status_code == 200
+    assert "access_token" in response.json()

@@ -34,14 +34,17 @@ def client():
 @pytest.fixture(scope="module", autouse=True)
 def setup_users(client):
     db = TestingSessionLocal()
-    db.query(models.User).delete()  # Clean up if rerunning
+    db.query(models.User).delete()
     db.add_all([
         models.User(name="admin", hashed_password=pwd_context.hash("admin"), is_admin=True),
         models.User(name="user", hashed_password=pwd_context.hash("password"), is_admin=False),
         models.User(name="nonadmin", hashed_password=pwd_context.hash("password"), is_admin=False),
     ])
     db.commit()
+    users = db.query(models.User).all()
+    print("🚀 Seeded users:", [u.name for u in users])
     db.close()
+
 
 @pytest.fixture
 def admin_token(client):
