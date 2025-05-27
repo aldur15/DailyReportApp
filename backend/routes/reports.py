@@ -20,14 +20,10 @@ def create_report(report: schemas.ReportCreate, db: Session = Depends(get_db)):
 
 @router.get("/reports", response_model=list[schemas.ReportOut])
 def read_reports(db: Session = Depends(get_db)):
+    print("ad")
     return crud.get_reports(db)
 
 
-@router.get("/reports", response_model=list[schemas.ReportOut])
-def read_reports(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    return crud.get_reports(db)
+
 
 
