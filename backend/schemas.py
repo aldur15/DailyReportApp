@@ -2,9 +2,10 @@ from pydantic import BaseModel
 from datetime import datetime
 
 class ReportCreate(BaseModel):
-    username: str
+    title: str
     summary: str
-
+    date: datetime | None = None
+    
 class ReportOut(ReportCreate):
     id: int
     date: datetime
@@ -28,9 +29,5 @@ class Token(BaseModel):
     token_type: str
 
 
-class ReportCreate(BaseModel):
-    title: str
-    summary: str
-    date: datetime | None = None
-    username: str | None = None
+
    
