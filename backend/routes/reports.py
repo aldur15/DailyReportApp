@@ -13,14 +13,24 @@ def get_db():
         yield db
     finally:
         db.close()
+        
 
+        
 @router.post("/reports", response_model=schemas.ReportOut)
-def create_report(report: schemas.ReportCreate, db: Session = Depends(get_db)):
-    return crud.create_report(db, report)
+def create_report(
+    report: schemas.ReportCreate,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
+):
+    report_data = report.dict()
+    report_data["user_id"] = user.id  # ✅ link by ID
+    return crud.create_report(db, report_data)
+
+
+
 
 @router.get("/reports", response_model=list[schemas.ReportOut])
 def read_reports(db: Session = Depends(get_db)):
-    print("ad")
     return crud.get_reports(db)
 
 

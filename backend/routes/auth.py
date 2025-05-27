@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.orm import Session
 from .. import schemas, models, database, auth
 
@@ -30,3 +30,32 @@ def login(user: schemas.UserCreate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = auth.create_access_token(data={"sub": str(db_user.id)})
     return {"access_token": token, "token_type": "bearer"}
+
+@router.post("/make-admin")
+def make_user_admin(
+    request: schemas.MakeAdminRequest,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    if current_user.is_admin == False:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admins can promote users"
+        )
+
+    user_to_promote = db.query(models.User).filter(models.User.name == request.username).first()
+    if not user_to_promote:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user_to_promote.is_admin == True:
+        return {"message": f"User '{request.username}' is already an admin"}
+
+    user_to_promote.is_admin = True
+    db.commit()
+    return {"message": f"User '{request.username}' has been promoted to admin"}
+
+@router.get("/users/me", response_model=schemas.UserOut)
+def get_current_user_info(
+    current_user: models.User = Depends(auth.get_current_user)
+):
+    return current_user
