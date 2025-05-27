@@ -22,12 +22,10 @@ def create_report(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user)
 ):
-    # Convert to dict and inject username
     report_data = report.dict()
-    report_data["username"] = user.name
-
-    # Pass the complete dict to your CRUD function
+    report_data["user_id"] = user.id  # ✅ link by ID
     return crud.create_report(db, report_data)
+
 
 
 

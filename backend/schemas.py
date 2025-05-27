@@ -9,6 +9,7 @@ class ReportCreate(BaseModel):
 class ReportOut(ReportCreate):
     id: int
     date: datetime
+    user_id: int  
 
     class Config:
         orm_mode = True
