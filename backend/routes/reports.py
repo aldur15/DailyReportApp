@@ -13,6 +13,7 @@ def get_db():
         yield db
     finally:
         db.close()
+        
 
         
 @router.post("/reports", response_model=schemas.ReportOut)

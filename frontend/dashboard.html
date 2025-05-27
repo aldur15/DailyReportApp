@@ -19,75 +19,125 @@
     <button type="submit">Submit Report</button>
   </form>
 
+  <!-- 🔐 Admin-only section -->
+  <div id="admin-section" style="display: none; margin-top: 40px;">
+    <h3>Promote User to Admin</h3>
+    <form id="make-admin-form">
+      <input type="text" id="promote-username" placeholder="Username to promote" required />
+      <button type="submit">Make Admin</button>
+    </form>
+  </div>
+
   <script>
-  const token = localStorage.getItem("token");
-  if (!token) {
-    window.location.href = "index.html";
-  }
-
-  document.getElementById("logout").addEventListener("click", () => {
-    localStorage.removeItem("token");
-    window.location.href = "index.html";
-  });
-
-  async function fetchReports() {
-    const res = await fetch("http://localhost:8000/reports", {
-      headers: {
-        Authorization: "Bearer " + token,
-      },
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      document.getElementById("report-container").innerText = JSON.stringify(data, null, 2);
-    } else {
-      alert("Session expired");
-      localStorage.removeItem("token");
+    const token = localStorage.getItem("token");
+    if (!token) {
       window.location.href = "index.html";
     }
-  }
 
-  fetchReports();
-
-  document.getElementById("report-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const title = document.getElementById("title").value;
-    const summary = document.getElementById("summary").value;
-    const date = document.getElementById("date").value;
-
-    const payload = {
-      title: title,
-      summary: summary,
-      date: date || null,
-    };
-
-    // 🔍 Debug log
-    console.log("Payload being sent to backend:", payload);
-
-    const res = await fetch("http://localhost:8000/reports", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token,
-      },
-      body: JSON.stringify(payload),
+    document.getElementById("logout").addEventListener("click", () => {
+      localStorage.removeItem("token");
+      window.location.href = "index.html";
     });
 
-    if (res.ok) {
-      alert("Report submitted!");
-      document.getElementById("report-form").reset();
-      fetchReports();
-    } else {
-      const error = await res.json();
-      console.error("Error response:", error);
-      alert("Error submitting report: " + JSON.stringify(error));
+    // Fetch and show reports (only works for admin)
+    async function fetchReports() {
+      const res = await fetch("http://localhost:8000/reports", {
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        document.getElementById("report-container").innerText = JSON.stringify(data, null, 2);
+      }
     }
-  });
 
-  // Autofill today’s date
-  document.getElementById("date").valueAsDate = new Date();
-</script>
+    // Fetch user info and conditionally show admin UI
+    async function checkIfAdmin() {
+      const res = await fetch("http://localhost:8000/users/me", {
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+      });
 
+      if (res.ok) {
+        const user = await res.json();
+        if (user.role === "admin") {
+          document.getElementById("admin-section").style.display = "block";
+          fetchReports(); // Only fetch reports if admin
+        }
+      } else {
+        alert("Session expired");
+        localStorage.removeItem("token");
+        window.location.href = "index.html";
+      }
+    }
+
+    checkIfAdmin();
+
+    document.getElementById("report-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const title = document.getElementById("title").value;
+      const summary = document.getElementById("summary").value;
+      const date = document.getElementById("date").value;
+
+      const payload = {
+        title,
+        summary,
+        date: date || null,
+      };
+
+      console.log("Payload being sent to backend:", payload);
+
+      const res = await fetch("http://localhost:8000/reports", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        alert("Report submitted!");
+        document.getElementById("report-form").reset();
+        checkIfAdmin(); // Refresh reports if admin
+      } else {
+        const error = await res.json();
+        console.error("Error response:", error);
+        alert("Error submitting report: " + JSON.stringify(error));
+      }
+    });
+
+    // Handle Make Admin form
+    document.getElementById("make-admin-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("promote-username").value;
+
+      const res = await fetch("http://localhost:8000/make-admin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+        },
+        body: JSON.stringify({ username }),
+      });
+
+      if (res.ok) {
+        const result = await res.json();
+        alert(result.message);
+        document.getElementById("make-admin-form").reset();
+      } else {
+        const error = await res.json();
+        alert("Error: " + JSON.stringify(error));
+      }
+    });
+
+    // Autofill today’s date
+    document.getElementById("date").valueAsDate = new Date();
+  </script>
 </body>
 </html>
+
