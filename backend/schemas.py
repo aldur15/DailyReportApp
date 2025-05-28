@@ -1,19 +1,43 @@
 from pydantic import BaseModel
 from datetime import datetime
 
+##REPORTS
 class ReportCreate(BaseModel):
     title: str
     summary: str
     date: datetime | None = None
-    
+
+class ReportUser(BaseModel):
+    id: int
+    name: str
+    class Config:
+        from_attributes = True
+
 class ReportOut(ReportCreate):
     id: int
     date: datetime
-    user_id: int  
+    edited: bool = False
+    user: ReportUser  
+
+    class Config:
+        from_attributes = True
+
+class ReportEdit(BaseModel):
+    title: str
+    summary: str
+    date: datetime
+
+class ReportVersionOut(BaseModel):
+    title: str
+    summary: str
+    date: datetime
+    saved_at: datetime
 
     class Config:
         orm_mode = True
 
+
+##USERS
 class UserCreate(BaseModel):
     name: str
     password: str

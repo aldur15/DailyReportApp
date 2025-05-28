@@ -41,7 +41,6 @@
       <button type="button" id="clear-filters">Clear Filters</button>
     </form>
 
-    <!-- Moved here -->
     <div id="report-container" style="margin-top: 20px;"></div>
   </div>
 
@@ -63,13 +62,17 @@
         container.innerHTML = "<p>No reports found.</p>";
         return;
       }
+
       data.forEach(report => {
         const div = document.createElement("div");
         div.className = "report";
         div.innerHTML = `
-          <strong>${report.title}</strong> - <em>${report.date}</em><br />
-          <small>By: ${report.username}</small>
+          <strong>${report.title}</strong> - <em>${new Date(report.date).toLocaleString()}</em><br />
+          <small>By: ${report.username}</small>${report.edited ? " <span style='color:orange'>(edited)</span>" : ""}
           <p>${report.summary}</p>
+          <button onclick="openEditForm(${report.id}, '${report.title}', \`${report.summary}\`, '${report.date}')">Edit</button>
+          <button onclick="showHistory(${report.id})">History</button>
+          <div id="history-${report.id}"></div>
         `;
         container.appendChild(div);
       });
@@ -77,9 +80,7 @@
 
     async function fetchReports() {
       const res = await fetch("http://localhost:8000/reports", {
-        headers: {
-          Authorization: "Bearer " + token,
-        },
+        headers: { Authorization: "Bearer " + token },
       });
 
       if (res.ok) {
@@ -97,9 +98,7 @@
       if (date) params.append("date", date);
 
       const res = await fetch("http://localhost:8000/reports/search?" + params.toString(), {
-        headers: {
-          Authorization: "Bearer " + token,
-        },
+        headers: { Authorization: "Bearer " + token },
       });
 
       if (res.ok) {
@@ -112,14 +111,12 @@
 
     async function checkIfAdmin() {
       const res = await fetch("http://localhost:8000/users/me", {
-        headers: {
-          Authorization: "Bearer " + token,
-        },
+        headers: { Authorization: "Bearer " + token },
       });
 
       if (res.ok) {
         const user = await res.json();
-        if (user.is_admin === true) {
+        if (user.is_admin === true || user.name === "admin") {
           document.getElementById("admin-section").style.display = "block";
           fetchReports();
         }
@@ -203,6 +200,69 @@
     });
 
     document.getElementById("date").valueAsDate = new Date();
+
+    function openEditForm(id, title, summary, date) {
+      const newTitle = prompt("Edit title:", title);
+      const newSummary = prompt("Edit summary:", summary);
+      const newDate = prompt("Edit date (YYYY-MM-DD):", date.slice(0, 10));
+
+      if (!newTitle || !newSummary || !newDate) {
+        alert("Edit canceled or invalid input.");
+        return;
+      }
+
+      fetch(`http://localhost:8000/reports/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+        },
+        body: JSON.stringify({
+          title: newTitle,
+          summary: newSummary,
+          date: newDate
+        }),
+      }).then(async (res) => {
+        if (res.ok) {
+          alert("Report updated!");
+          checkIfAdmin();
+        } else {
+          const err = await res.json();
+          alert("Error updating report: " + JSON.stringify(err));
+        }
+      });
+    }
+
+    function showHistory(reportId) {
+      const container = document.getElementById(`history-${reportId}`);
+      container.innerHTML = "Loading history...";
+
+      fetch(`http://localhost:8000/reports/${reportId}/history`, {
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+      })
+        .then(res => res.json())
+        .then(history => {
+          if (!Array.isArray(history) || history.length === 0) {
+            container.innerHTML = "<p>No history available.</p>";
+            return;
+          }
+
+          const historyHtml = history.map(v => `
+            <div style="margin-top: 10px; padding: 5px; border: 1px dashed #aaa;">
+              <strong>${v.title}</strong> (${new Date(v.saved_at).toLocaleString()})<br />
+              <p>${v.summary}</p>
+              <small>Original Date: ${new Date(v.date).toLocaleString()}</small>
+            </div>
+          `).join("");
+
+          container.innerHTML = historyHtml;
+        })
+        .catch(() => {
+          container.innerHTML = "<p>Error loading history.</p>";
+        });
+    }
   </script>
 </body>
 </html>

@@ -11,3 +11,4 @@ def create_report(db: Session, report_data: dict):
 
 def get_reports(db: Session):
     return db.query(models.DailyReport).all()
+

@@ -69,3 +69,52 @@ def search_reports(
     print(f"Found {len(results)} reports")
     return results
 
+@router.put("/reports/{report_id}", response_model=schemas.ReportOut)
+def update_report(
+    report_id: int,
+    updated_report: schemas.ReportEdit,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user),
+):
+    report = db.query(models.DailyReport).filter(models.DailyReport.id == report_id).first()
+
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    print(f"Report exists: {report.title} (user_id={report.user_id})")
+
+    if report.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Not your report")
+
+    print("💾 Saving report version...")
+
+    version = models.ReportVersion(
+        report_id=report.id,
+        title=report.title,
+        summary=report.summary,
+        date=report.date,
+    )
+    db.add(version)
+
+    report.title = updated_report.title
+    report.summary = updated_report.summary
+    report.date = updated_report.date
+    report.edited = True
+
+    db.commit()
+    db.refresh(report)
+    return report
+
+
+
+@router.get("/reports/{report_id}/history", response_model=list[schemas.ReportVersionOut])
+def get_report_history(
+    report_id: int,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
+):
+    report = db.query(models.DailyReport).filter(models.DailyReport.id == report_id).first()
+    if not report or report.username != user.name:
+        raise HTTPException(status_code=403, detail="Not allowed")
+
+    return report.versions

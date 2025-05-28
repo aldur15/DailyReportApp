@@ -9,9 +9,24 @@ class DailyReport(Base):
     title = Column(String, nullable=False)
     summary = Column(String, nullable=False)
     date = Column(DateTime, default=datetime.utcnow)
-    
-    user_id = Column(Integer, ForeignKey("users.id")) 
+    edited = Column(Boolean, default=False)
+
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     user = relationship("User", back_populates="reports")
+
+    versions = relationship("ReportVersion", back_populates="original", cascade="all, delete")
+
+
+class ReportVersion(Base):
+    __tablename__ = "report_versions"
+    id = Column(Integer, primary_key=True, index=True)
+    report_id = Column(Integer, ForeignKey("daily_reports.id"))
+    title = Column(String)
+    summary = Column(String)
+    date = Column(DateTime)
+    saved_at = Column(DateTime, default=datetime.utcnow)
+
+    original = relationship("DailyReport", back_populates="versions")
 
 
 class User(Base):
@@ -20,7 +35,7 @@ class User(Base):
     name = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     is_admin = Column(Boolean, default=False)
-    
-    reports = relationship("DailyReport", back_populates="user") 
+
+    reports = relationship("DailyReport", back_populates="user")  
 
 

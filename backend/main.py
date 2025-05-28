@@ -71,8 +71,8 @@ app.include_router(reports.router)
 
 
 
-
-#venv\Scripts\activate
+#create venv: python -m venv venv
+#venv\Scripts\activate     
 #linux: source venv/bin/activate
 #pip freeze > requirements.txt
 #uvicorn backend.main:app --reload

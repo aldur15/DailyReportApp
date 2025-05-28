@@ -3,9 +3,8 @@ from jose import JWTError, jwt
 from datetime import datetime, timedelta
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jose import JWTError, jwt
 from sqlalchemy.orm import Session
-from . import models, database
+from . import models, database, schemas
 from .database import SessionLocal
 
 
@@ -61,4 +60,31 @@ def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+def update_report(db: Session, report_id: int, data: schemas.ReportEdit, user: models.User):
+    report = db.query(models.DailyReport).filter(models.DailyReport.id == report_id).first()
+
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    if report.user_id != user.id:
+        raise HTTPException(status_code=403, detail="Not your report")
+
+    # Save version
+    version = models.ReportVersion(
+        report_id=report.id,
+        title=report.title,
+        summary=report.summary,
+        date=report.date
+    )
+    db.add(version)
+
+    report.title = data.title
+    report.summary = data.summary
+    report.date = data.date
+    report.edited = True
+
+    db.commit()
+    db.refresh(report)
+    return report
 
