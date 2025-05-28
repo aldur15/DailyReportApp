@@ -3,10 +3,12 @@
 <head>
   <title>Dashboard</title>
   <style>
-    .report {
+    .report, .history-card {
       border: 1px solid #ccc;
       padding: 10px;
       margin: 10px 0;
+      border-radius: 5px;
+      background-color: #f9f9f9;
     }
   </style>
 </head>
@@ -37,8 +39,10 @@
       <input type="text" id="search-username" placeholder="Search by username" />
       <input type="text" id="search-title" placeholder="Search by title" />
       <input type="date" id="search-date" />
-      <button type="submit">Search</button>
+      <input type="month" id="search-month" />
       <button type="button" id="clear-filters">Clear Filters</button>
+      <button type="button" id="show-all">Show All</button>
+      <button type="button" id="hide-all">Hide All</button>
     </form>
 
     <div id="report-container" style="margin-top: 20px;"></div>
@@ -46,9 +50,7 @@
 
   <script>
     const token = localStorage.getItem("token");
-    if (!token) {
-      window.location.href = "index.html";
-    }
+    if (!token) window.location.href = "index.html";
 
     document.getElementById("logout").addEventListener("click", () => {
       localStorage.removeItem("token");
@@ -62,61 +64,98 @@
         container.innerHTML = "<p>No reports found.</p>";
         return;
       }
-
       data.forEach(report => {
         const div = document.createElement("div");
         div.className = "report";
+        const username = report.username || (report.user && report.user.name) || "Unknown";
         div.innerHTML = `
           <strong>${report.title}</strong> - <em>${new Date(report.date).toLocaleString()}</em><br />
-          <small>By: ${report.username}</small>${report.edited ? " <span style='color:orange'>(edited)</span>" : ""}
+          <small>By: ${username}</small>${report.edited ? " <span style='color:orange'>(edited)</span>" : ""}
           <p>${report.summary}</p>
           <button onclick="openEditForm(${report.id}, '${report.title}', \`${report.summary}\`, '${report.date}')">Edit</button>
           <button onclick="showHistory(${report.id})">History</button>
+          <button onclick="hideHistory(${report.id})">Hide History</button>
           <div id="history-${report.id}"></div>
         `;
         container.appendChild(div);
       });
     }
 
+    function openEditForm(id, title, summary, date) {
+      const newTitle = prompt("New title:", title);
+      if (newTitle === null) return;
+      const newSummary = prompt("New summary:", summary);
+      if (newSummary === null) return;
+      const newDate = prompt("New date:", date);
+      if (newDate === null) return;
+
+      fetch(`http://localhost:8000/reports/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+        },
+        body: JSON.stringify({ title: newTitle, summary: newSummary, date: newDate }),
+      }).then(res => res.json()).then(data => {
+        if (data.detail) alert("Error updating report: " + JSON.stringify(data));
+        else {
+          alert("Report updated");
+          fetchReports();
+        }
+      });
+    }
+
+    function showHistory(id) {
+      fetch(`http://localhost:8000/reports/${id}/history`, {
+        headers: { Authorization: "Bearer " + token },
+      })
+        .then(res => res.json())
+        .then(history => {
+          const container = document.getElementById(`history-${id}`);
+          container.innerHTML = history.length === 0 ? "<p>No history available.</p>" : history.map(v => `
+            <div class="history-card">
+              <strong>${v.title}</strong> - <em>${new Date(v.date).toLocaleString()}</em><br />
+              <small>Saved: ${new Date(v.saved_at).toLocaleString()}</small>
+              <p>${v.summary}</p>
+            </div>
+          `).join("");
+        });
+    }
+
+    function hideHistory(id) {
+      document.getElementById(`history-${id}`).innerHTML = "";
+    }
+
     async function fetchReports() {
       const res = await fetch("http://localhost:8000/reports", {
         headers: { Authorization: "Bearer " + token },
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        renderReports(data);
-      } else {
-        document.getElementById("report-container").innerText = "Failed to load reports.";
-      }
+      res.ok ? renderReports(await res.json()) : document.getElementById("report-container").innerText = "Failed to load reports.";
     }
 
-    async function fetchFilteredReports(username, title, date) {
+    async function fetchFilteredReports(username, title, date, month) {
       const params = new URLSearchParams();
       if (username) params.append("username", username);
       if (title) params.append("title", title);
       if (date) params.append("date", date);
-
+      if (month) {
+        const [year, monthNum] = month.split("-");
+        params.append("month", monthNum);
+        params.append("year", year);
+      }
       const res = await fetch("http://localhost:8000/reports/search?" + params.toString(), {
         headers: { Authorization: "Bearer " + token },
       });
-
-      if (res.ok) {
-        const data = await res.json();
-        renderReports(data);
-      } else {
-        alert("Error fetching filtered reports");
-      }
+      res.ok ? renderReports(await res.json()) : alert("Error fetching filtered reports");
     }
 
     async function checkIfAdmin() {
       const res = await fetch("http://localhost:8000/users/me", {
         headers: { Authorization: "Bearer " + token },
       });
-
       if (res.ok) {
         const user = await res.json();
-        if (user.is_admin === true || user.name === "admin") {
+        if (user.is_admin) {
           document.getElementById("admin-section").style.display = "block";
           fetchReports();
         }
@@ -129,42 +168,59 @@
 
     checkIfAdmin();
 
+    let debounceTimer;
+    const debounce = (func, delay) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(func, delay);
+    };
+
+    const triggerFilter = () => {
+      const username = document.getElementById("search-username").value;
+      const title = document.getElementById("search-title").value;
+      const date = document.getElementById("search-date").value;
+      const month = document.getElementById("search-month").value;
+      fetchFilteredReports(username, title, date, month);
+    };
+
+    ["search-username", "search-title", "search-date", "search-month"].forEach(id => {
+      document.getElementById(id).addEventListener("input", () => debounce(triggerFilter, 300));
+    });
+
+    document.getElementById("clear-filters").addEventListener("click", () => {
+      ["search-username", "search-title", "search-date", "search-month"].forEach(id => document.getElementById(id).value = "");
+      fetchReports();
+    });
+
+    document.getElementById("show-all").addEventListener("click", fetchReports);
+    document.getElementById("hide-all").addEventListener("click", () => {
+      document.getElementById("report-container").innerHTML = "";
+    });
+
     document.getElementById("report-form").addEventListener("submit", async (e) => {
       e.preventDefault();
-
       const title = document.getElementById("title").value;
       const summary = document.getElementById("summary").value;
-      const date = document.getElementById("date").value;
-
-      const payload = {
-        title,
-        summary,
-        date: date || null,
-      };
-
+      const date = document.getElementById("date").value || null;
       const res = await fetch("http://localhost:8000/reports", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: "Bearer " + token,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ title, summary, date }),
       });
-
       if (res.ok) {
         alert("Report submitted!");
         document.getElementById("report-form").reset();
         checkIfAdmin();
       } else {
-        const error = await res.json();
-        alert("Error submitting report: " + JSON.stringify(error));
+        alert("Error submitting report: " + JSON.stringify(await res.json()));
       }
     });
 
     document.getElementById("make-admin-form").addEventListener("submit", async (e) => {
       e.preventDefault();
       const username = document.getElementById("promote-username").value;
-
       const res = await fetch("http://localhost:8000/make-admin", {
         method: "POST",
         headers: {
@@ -173,96 +229,15 @@
         },
         body: JSON.stringify({ username }),
       });
-
       if (res.ok) {
-        const result = await res.json();
-        alert(result.message);
+        alert((await res.json()).message);
         document.getElementById("make-admin-form").reset();
       } else {
-        const error = await res.json();
-        alert("Error: " + JSON.stringify(error));
+        alert("Error: " + JSON.stringify(await res.json()));
       }
-    });
-
-    document.getElementById("search-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const username = document.getElementById("search-username").value;
-      const title = document.getElementById("search-title").value;
-      const date = document.getElementById("search-date").value;
-      fetchFilteredReports(username, title, date);
-    });
-
-    document.getElementById("clear-filters").addEventListener("click", () => {
-      document.getElementById("search-username").value = "";
-      document.getElementById("search-title").value = "";
-      document.getElementById("search-date").value = "";
-      fetchReports();
     });
 
     document.getElementById("date").valueAsDate = new Date();
-
-    function openEditForm(id, title, summary, date) {
-      const newTitle = prompt("Edit title:", title);
-      const newSummary = prompt("Edit summary:", summary);
-      const newDate = prompt("Edit date (YYYY-MM-DD):", date.slice(0, 10));
-
-      if (!newTitle || !newSummary || !newDate) {
-        alert("Edit canceled or invalid input.");
-        return;
-      }
-
-      fetch(`http://localhost:8000/reports/${id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + token,
-        },
-        body: JSON.stringify({
-          title: newTitle,
-          summary: newSummary,
-          date: newDate
-        }),
-      }).then(async (res) => {
-        if (res.ok) {
-          alert("Report updated!");
-          checkIfAdmin();
-        } else {
-          const err = await res.json();
-          alert("Error updating report: " + JSON.stringify(err));
-        }
-      });
-    }
-
-    function showHistory(reportId) {
-      const container = document.getElementById(`history-${reportId}`);
-      container.innerHTML = "Loading history...";
-
-      fetch(`http://localhost:8000/reports/${reportId}/history`, {
-        headers: {
-          Authorization: "Bearer " + token,
-        },
-      })
-        .then(res => res.json())
-        .then(history => {
-          if (!Array.isArray(history) || history.length === 0) {
-            container.innerHTML = "<p>No history available.</p>";
-            return;
-          }
-
-          const historyHtml = history.map(v => `
-            <div style="margin-top: 10px; padding: 5px; border: 1px dashed #aaa;">
-              <strong>${v.title}</strong> (${new Date(v.saved_at).toLocaleString()})<br />
-              <p>${v.summary}</p>
-              <small>Original Date: ${new Date(v.date).toLocaleString()}</small>
-            </div>
-          `).join("");
-
-          container.innerHTML = historyHtml;
-        })
-        .catch(() => {
-          container.innerHTML = "<p>Error loading history.</p>";
-        });
-    }
   </script>
 </body>
 </html>
