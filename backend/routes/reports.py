@@ -114,7 +114,7 @@ def get_report_history(
     user: models.User = Depends(get_current_user)
 ):
     report = db.query(models.DailyReport).filter(models.DailyReport.id == report_id).first()
-    if not report or report.username != user.name:
+    if not report or report.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not allowed")
 
     return report.versions
