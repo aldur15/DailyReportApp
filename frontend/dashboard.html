@@ -2,11 +2,17 @@
 <html>
 <head>
   <title>Dashboard</title>
+  <style>
+    .report {
+      border: 1px solid #ccc;
+      padding: 10px;
+      margin: 10px 0;
+    }
+  </style>
 </head>
 <body>
   <h2>Welcome</h2>
   <button id="logout">Logout</button>
-  <div id="report-container"></div>
 
   <h3>Create Daily Report</h3>
   <form id="report-form">
@@ -20,153 +26,183 @@
   </form>
 
   <div id="admin-section" style="display: none; margin-top: 40px;">
-  <h3>Promote User to Admin</h3>
-  <form id="make-admin-form">
-    <input type="text" id="promote-username" placeholder="Username to promote" required />
-    <button type="submit">Make Admin</button>
-  </form>
+    <h3>Promote User to Admin</h3>
+    <form id="make-admin-form">
+      <input type="text" id="promote-username" placeholder="Username to promote" required />
+      <button type="submit">Make Admin</button>
+    </form>
 
-  <h3>Search Daily Reports</h3>
-  <form id="search-form">
-    <input type="text" id="search-username" placeholder="Search by username" />
-    <input type="text" id="search-title" placeholder="Search by title" />
-    <input type="date" id="search-date" />
-    <button type="submit">Search</button>
-  </form>
-</div>
+    <h3>Search Daily Reports</h3>
+    <form id="search-form">
+      <input type="text" id="search-username" placeholder="Search by username" />
+      <input type="text" id="search-title" placeholder="Search by title" />
+      <input type="date" id="search-date" />
+      <button type="submit">Search</button>
+      <button type="button" id="clear-filters">Clear Filters</button>
+    </form>
 
-<script>
-  const token = localStorage.getItem("token");
-  if (!token) {
-    window.location.href = "index.html";
-  }
+    <!-- Moved here -->
+    <div id="report-container" style="margin-top: 20px;"></div>
+  </div>
 
-  document.getElementById("logout").addEventListener("click", () => {
-    localStorage.removeItem("token");
-    window.location.href = "index.html";
-  });
-
-  async function fetchReports() {
-    const res = await fetch("http://localhost:8000/reports", {
-      headers: {
-        Authorization: "Bearer " + token,
-      },
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      document.getElementById("report-container").innerText = JSON.stringify(data, null, 2);
-    }
-  }
-
-  async function fetchFilteredReports(username, title, date) {
-    const params = new URLSearchParams();
-    if (username) params.append("username", username);
-    if (title) params.append("title", title);
-    if (date) params.append("date", date);
-
-    const res = await fetch("http://localhost:8000/reports/search?" + params.toString(), {
-      headers: {
-        Authorization: "Bearer " + token,
-      },
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      document.getElementById("report-container").innerText = JSON.stringify(data, null, 2);
-    } else {
-      alert("Error fetching filtered reports");
-    }
-  }
-
-  async function checkIfAdmin() {
-    const res = await fetch("http://localhost:8000/users/me", {
-      headers: {
-        Authorization: "Bearer " + token,
-      },
-    });
-
-    if (res.ok) {
-      const user = await res.json();
-      if (user.is_admin === true) {
-        document.getElementById("admin-section").style.display = "block";
-        fetchReports();
-      }
-    } else {
-      alert("Session expired");
-      localStorage.removeItem("token");
+  <script>
+    const token = localStorage.getItem("token");
+    if (!token) {
       window.location.href = "index.html";
     }
-  }
 
-  checkIfAdmin();
-
-  document.getElementById("report-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const title = document.getElementById("title").value;
-    const summary = document.getElementById("summary").value;
-    const date = document.getElementById("date").value;
-
-    const payload = {
-      title,
-      summary,
-      date: date || null,
-    };
-
-    const res = await fetch("http://localhost:8000/reports", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token,
-      },
-      body: JSON.stringify(payload),
+    document.getElementById("logout").addEventListener("click", () => {
+      localStorage.removeItem("token");
+      window.location.href = "index.html";
     });
 
-    if (res.ok) {
-      alert("Report submitted!");
-      document.getElementById("report-form").reset();
-      checkIfAdmin();
-    } else {
-      const error = await res.json();
-      alert("Error submitting report: " + JSON.stringify(error));
+    function renderReports(data) {
+      const container = document.getElementById("report-container");
+      container.innerHTML = "";
+      if (data.length === 0) {
+        container.innerHTML = "<p>No reports found.</p>";
+        return;
+      }
+      data.forEach(report => {
+        const div = document.createElement("div");
+        div.className = "report";
+        div.innerHTML = `
+          <strong>${report.title}</strong> - <em>${report.date}</em><br />
+          <small>By: ${report.username}</small>
+          <p>${report.summary}</p>
+        `;
+        container.appendChild(div);
+      });
     }
-  });
 
-  document.getElementById("make-admin-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const username = document.getElementById("promote-username").value;
+    async function fetchReports() {
+      const res = await fetch("http://localhost:8000/reports", {
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+      });
 
-    const res = await fetch("http://localhost:8000/make-admin", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + token,
-      },
-      body: JSON.stringify({ username }),
+      if (res.ok) {
+        const data = await res.json();
+        renderReports(data);
+      } else {
+        document.getElementById("report-container").innerText = "Failed to load reports.";
+      }
+    }
+
+    async function fetchFilteredReports(username, title, date) {
+      const params = new URLSearchParams();
+      if (username) params.append("username", username);
+      if (title) params.append("title", title);
+      if (date) params.append("date", date);
+
+      const res = await fetch("http://localhost:8000/reports/search?" + params.toString(), {
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        renderReports(data);
+      } else {
+        alert("Error fetching filtered reports");
+      }
+    }
+
+    async function checkIfAdmin() {
+      const res = await fetch("http://localhost:8000/users/me", {
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+      });
+
+      if (res.ok) {
+        const user = await res.json();
+        if (user.is_admin === true) {
+          document.getElementById("admin-section").style.display = "block";
+          fetchReports();
+        }
+      } else {
+        alert("Session expired");
+        localStorage.removeItem("token");
+        window.location.href = "index.html";
+      }
+    }
+
+    checkIfAdmin();
+
+    document.getElementById("report-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const title = document.getElementById("title").value;
+      const summary = document.getElementById("summary").value;
+      const date = document.getElementById("date").value;
+
+      const payload = {
+        title,
+        summary,
+        date: date || null,
+      };
+
+      const res = await fetch("http://localhost:8000/reports", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        alert("Report submitted!");
+        document.getElementById("report-form").reset();
+        checkIfAdmin();
+      } else {
+        const error = await res.json();
+        alert("Error submitting report: " + JSON.stringify(error));
+      }
     });
 
-    if (res.ok) {
-      const result = await res.json();
-      alert(result.message);
-      document.getElementById("make-admin-form").reset();
-    } else {
-      const error = await res.json();
-      alert("Error: " + JSON.stringify(error));
-    }
-  });
+    document.getElementById("make-admin-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("promote-username").value;
 
-  // 🆕 Search form handler
-  document.getElementById("search-form").addEventListener("submit", async (e) => {
-    e.preventDefault();
-    const username = document.getElementById("search-username").value;
-    const title = document.getElementById("search-title").value;
-    const date = document.getElementById("search-date").value;
-    fetchFilteredReports(username, title, date);
-  });
+      const res = await fetch("http://localhost:8000/make-admin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+        },
+        body: JSON.stringify({ username }),
+      });
 
-  document.getElementById("date").valueAsDate = new Date();
-</script>
+      if (res.ok) {
+        const result = await res.json();
+        alert(result.message);
+        document.getElementById("make-admin-form").reset();
+      } else {
+        const error = await res.json();
+        alert("Error: " + JSON.stringify(error));
+      }
+    });
+
+    document.getElementById("search-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const username = document.getElementById("search-username").value;
+      const title = document.getElementById("search-title").value;
+      const date = document.getElementById("search-date").value;
+      fetchFilteredReports(username, title, date);
+    });
+
+    document.getElementById("clear-filters").addEventListener("click", () => {
+      document.getElementById("search-username").value = "";
+      document.getElementById("search-title").value = "";
+      document.getElementById("search-date").value = "";
+      fetchReports();
+    });
+
+    document.getElementById("date").valueAsDate = new Date();
+  </script>
 </body>
 </html>
-
