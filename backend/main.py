@@ -25,6 +25,32 @@ def create_admin():
         print("Admin user created.")
     else:
         print("Admin already exists.")
+
+    existing_non_admin = db.query(models.User).filter(models.User.name == "nonadmin").first()
+    if not existing_non_admin:
+        nonadmin_user = models.User(
+            name="nonadmin",
+            hashed_password=pwd_context.hash("password"),
+            is_admin=False
+        )
+        db.add(nonadmin_user)
+        db.commit()
+        print("nonadmin user created.")
+    else:
+        print("nonadmin already exists.")
+
+    existing_user = db.query(models.User).filter(models.User.name == "user").first()
+    if not existing_user:
+        user = models.User(
+            name="user",
+            hashed_password=pwd_context.hash("password"),
+            is_admin=False
+        )
+        db.add(user)
+        db.commit()
+        print("user user created.")
+    else:
+        print("user already exists.")
     db.close()
 
 create_admin()
@@ -47,8 +73,9 @@ app.include_router(reports.router)
 
 
 #venv\Scripts\activate
+#linux: source venv/bin/activate
 #pip freeze > requirements.txt
 #uvicorn backend.main:app --reload
 #http://127.0.0.1:8000/docs
-                   
+
 
