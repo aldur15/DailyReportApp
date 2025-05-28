@@ -75,6 +75,7 @@
           <button onclick="openEditForm(${report.id}, '${report.title}', \`${report.summary}\`, '${report.date}')">Edit</button>
           <button onclick="showHistory(${report.id})">History</button>
           <button onclick="hideHistory(${report.id})">Hide History</button>
+          <button onclick="deleteReport(${report.id})">Delete</button>
           <div id="history-${report.id}"></div>
         `;
         container.appendChild(div);
@@ -238,6 +239,28 @@
     });
 
     document.getElementById("date").valueAsDate = new Date();
+
+     function deleteReport(id) {
+    if (!confirm("Are you sure you want to delete this report?")) return;
+
+    fetch(`http://localhost:8000/reports/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: "Bearer " + token,
+      },
+    })
+      .then(res => {
+        if (res.ok) {
+          alert("Report deleted.");
+          fetchReports();
+        } else {
+          return res.json().then(data => {
+            alert("Error deleting report: " + (data.detail || JSON.stringify(data)));
+          });
+        }
+      })
+      .catch(err => alert("Request failed: " + err));
+  }
   </script>
 </body>
 </html>

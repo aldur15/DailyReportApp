@@ -14,9 +14,8 @@ def get_db():
         yield db
     finally:
         db.close()
-        
 
-        
+
 @router.post("/reports", response_model=schemas.ReportOut)
 def create_report(
     report: schemas.ReportCreate,
@@ -28,18 +27,15 @@ def create_report(
     return crud.create_report(db, report_data)
 
 
-
-
 @router.get("/reports", response_model=list[schemas.ReportOut])
 def read_reports(db: Session = Depends(get_db)):
     return crud.get_reports(db)
 
 
-
 @router.get("/reports/search", response_model=list[schemas.ReportOut])
 def search_reports(
     username: str = Query(default=None),
-    date: str = Query(default=None),  # accept as string
+    date: str = Query(default=None),
     title: str = Query(default=None),
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user)
@@ -50,24 +46,20 @@ def search_reports(
     query = db.query(models.DailyReport)
 
     if username:
-        print(f"Filtering by username: {username}")
         query = query.join(models.User).filter(models.User.name.ilike(f"%{username}%"))
 
     if date:
         try:
             parsed_date = datetime.strptime(date, "%Y-%m-%d").date()
-            print(f"Filtering for date: {parsed_date}")
             query = query.filter(func.date(models.DailyReport.date) == parsed_date)
         except ValueError:
             raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
 
     if title:
-        print(f"🔎 Filtering by title: {title}")
         query = query.filter(models.DailyReport.title.ilike(f"%{title}%"))
 
-    results = query.all()
-    print(f"Found {len(results)} reports")
-    return results
+    return query.all()
+
 
 @router.put("/reports/{report_id}", response_model=schemas.ReportOut)
 def update_report(
@@ -81,12 +73,8 @@ def update_report(
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
 
-    print(f"Report exists: {report.title} (user_id={report.user_id})")
-
-    if report.user_id != user.id:
+    if not user.is_admin and report.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not your report")
-
-    print("💾 Saving report version...")
 
     version = models.ReportVersion(
         report_id=report.id,
@@ -106,6 +94,24 @@ def update_report(
     return report
 
 
+@router.delete("/reports/{report_id}")
+def delete_report(
+    report_id: int,
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
+):
+    report = db.query(models.DailyReport).filter(models.DailyReport.id == report_id).first()
+
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    if not user.is_admin:
+        raise HTTPException(status_code=403, detail="Only admins can delete reports")
+
+    db.delete(report)
+    db.commit()
+    return {"message": "Report deleted successfully"}
+
 
 @router.get("/reports/{report_id}/history", response_model=list[schemas.ReportVersionOut])
 def get_report_history(
@@ -114,7 +120,10 @@ def get_report_history(
     user: models.User = Depends(get_current_user)
 ):
     report = db.query(models.DailyReport).filter(models.DailyReport.id == report_id).first()
-    if not report or report.user_id != user.id:
+    if not report:
+        raise HTTPException(status_code=404, detail="Report not found")
+
+    if not user.is_admin and report.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not allowed")
 
     return report.versions
