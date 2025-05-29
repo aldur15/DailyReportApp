@@ -44,9 +44,9 @@
       <button type="button" id="show-all">Show All</button>
       <button type="button" id="hide-all">Hide All</button>
     </form>
-
-    <div id="report-container" style="margin-top: 20px;"></div>
   </div>
+
+  <div id="report-container" style="margin-top: 20px;"></div>
 
   <script>
     const token = localStorage.getItem("token");
@@ -56,6 +56,26 @@
       localStorage.removeItem("token");
       window.location.href = "index.html";
     });
+
+    async function fetchReports() {
+      const userRes = await fetch("http://localhost:8000/users/me", {
+        headers: { Authorization: "Bearer " + token },
+      });
+      if (!userRes.ok) return alert("Error checking user");
+
+      const user = await userRes.json();
+      const endpoint = user.is_admin ? "reports" : "reports/mine";
+
+      const res = await fetch(`http://localhost:8000/${endpoint}`, {
+        headers: { Authorization: "Bearer " + token },
+      });
+
+      if (res.ok) {
+        renderReports(await res.json());
+      } else {
+        document.getElementById("report-container").innerText = "Failed to load reports.";
+      }
+    }
 
     function renderReports(data) {
       const container = document.getElementById("report-container");
@@ -107,15 +127,13 @@
     }
 
     function showHistory(id) {
-  fetch(`http://localhost:8000/reports/${id}/history`, {
-    headers: { Authorization: "Bearer " + token },
-  })
-    .then(res => res.json())
-    .then(history => {
-      const container = document.getElementById(`history-${id}`);
-      container.innerHTML = history.length === 0
-        ? "<p>No history available.</p>"
-        : history.map(v => {
+      fetch(`http://localhost:8000/reports/${id}/history`, {
+        headers: { Authorization: "Bearer " + token },
+      })
+        .then(res => res.json())
+        .then(history => {
+          const container = document.getElementById(`history-${id}`);
+          container.innerHTML = history.length === 0 ? "<p>No history available.</p>" : history.map(v => {
             const editedBy = v.edited_by && v.edited_by.name ? v.edited_by.name : "Unknown";
             return `
               <div class="history-card">
@@ -126,19 +144,25 @@
               </div>
             `;
           }).join("");
-    });
-}
+        });
+    }
 
     function hideHistory(id) {
       document.getElementById(`history-${id}`).innerHTML = "";
     }
 
-    async function fetchReports() {
-      const res = await fetch("http://localhost:8000/reports", {
-        headers: { Authorization: "Bearer " + token },
-      });
-      res.ok ? renderReports(await res.json()) : document.getElementById("report-container").innerText = "Failed to load reports.";
-    }
+    const debounce = (func, delay) => {
+      clearTimeout(window.debounceTimer);
+      window.debounceTimer = setTimeout(func, delay);
+    };
+
+    const triggerFilter = () => {
+      const username = document.getElementById("search-username").value;
+      const title = document.getElementById("search-title").value;
+      const date = document.getElementById("search-date").value;
+      const month = document.getElementById("search-month").value;
+      fetchFilteredReports(username, title, date, month);
+    };
 
     async function fetchFilteredReports(username, title, date, month) {
       const params = new URLSearchParams();
@@ -155,51 +179,18 @@
       });
       res.ok ? renderReports(await res.json()) : alert("Error fetching filtered reports");
     }
-
-    async function checkIfAdmin() {
-      const res = await fetch("http://localhost:8000/users/me", {
-        headers: { Authorization: "Bearer " + token },
-      });
-      if (res.ok) {
-        const user = await res.json();
-        if (user.is_admin) {
-          document.getElementById("admin-section").style.display = "block";
-          fetchReports();
-        }
-      } else {
-        alert("Session expired");
-        localStorage.removeItem("token");
-        window.location.href = "index.html";
-      }
-    }
-
-    checkIfAdmin();
-
-    let debounceTimer;
-    const debounce = (func, delay) => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(func, delay);
-    };
-
-    const triggerFilter = () => {
-      const username = document.getElementById("search-username").value;
-      const title = document.getElementById("search-title").value;
-      const date = document.getElementById("search-date").value;
-      const month = document.getElementById("search-month").value;
-      fetchFilteredReports(username, title, date, month);
-    };
-
+    
     ["search-username", "search-title", "search-date", "search-month"].forEach(id => {
-      document.getElementById(id).addEventListener("input", () => debounce(triggerFilter, 300));
+      document.getElementById(id)?.addEventListener("input", () => debounce(triggerFilter, 300));
     });
 
-    document.getElementById("clear-filters").addEventListener("click", () => {
+    document.getElementById("clear-filters")?.addEventListener("click", () => {
       ["search-username", "search-title", "search-date", "search-month"].forEach(id => document.getElementById(id).value = "");
       fetchReports();
     });
 
-    document.getElementById("show-all").addEventListener("click", fetchReports);
-    document.getElementById("hide-all").addEventListener("click", () => {
+    document.getElementById("show-all")?.addEventListener("click", fetchReports);
+    document.getElementById("hide-all")?.addEventListener("click", () => {
       document.getElementById("report-container").innerHTML = "";
     });
 
@@ -219,13 +210,13 @@
       if (res.ok) {
         alert("Report submitted!");
         document.getElementById("report-form").reset();
-        checkIfAdmin();
+        fetchReports();
       } else {
         alert("Error submitting report: " + JSON.stringify(await res.json()));
       }
     });
 
-    document.getElementById("make-admin-form").addEventListener("submit", async (e) => {
+    document.getElementById("make-admin-form")?.addEventListener("submit", async (e) => {
       e.preventDefault();
       const username = document.getElementById("promote-username").value;
       const res = await fetch("http://localhost:8000/make-admin", {
@@ -246,27 +237,27 @@
 
     document.getElementById("date").valueAsDate = new Date();
 
-     function deleteReport(id) {
-    if (!confirm("Are you sure you want to delete this report?")) return;
+    function deleteReport(id) {
+      if (!confirm("Are you sure you want to delete this report?")) return;
 
-    fetch(`http://localhost:8000/reports/${id}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: "Bearer " + token,
-      },
-    })
-      .then(res => {
-        if (res.ok) {
-          alert("Report deleted.");
-          fetchReports();
-        } else {
-          return res.json().then(data => {
-            alert("Error deleting report: " + (data.detail || JSON.stringify(data)));
-          });
-        }
+      fetch(`http://localhost:8000/reports/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: "Bearer " + token },
       })
-      .catch(err => alert("Request failed: " + err));
-  }
+        .then(res => {
+          if (res.ok) {
+            alert("Report deleted.");
+            fetchReports();
+          } else {
+            return res.json().then(data => {
+              alert("Error deleting report: " + (data.detail || JSON.stringify(data)));
+            });
+          }
+        })
+        .catch(err => alert("Request failed: " + err));
+    }
+
+    fetchReports();
   </script>
 </body>
 </html>

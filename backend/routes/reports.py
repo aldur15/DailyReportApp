@@ -140,3 +140,12 @@ def get_report_history(
         raise HTTPException(status_code=403, detail="Not allowed")
 
     return report.versions
+
+
+#retourns reports of only the user
+@router.get("/reports/mine", response_model=list[schemas.ReportOut])
+def read_my_reports(
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
+):
+    return db.query(models.DailyReport).filter(models.DailyReport.user_id == user.id).all()
