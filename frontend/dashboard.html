@@ -107,21 +107,27 @@
     }
 
     function showHistory(id) {
-      fetch(`http://localhost:8000/reports/${id}/history`, {
-        headers: { Authorization: "Bearer " + token },
-      })
-        .then(res => res.json())
-        .then(history => {
-          const container = document.getElementById(`history-${id}`);
-          container.innerHTML = history.length === 0 ? "<p>No history available.</p>" : history.map(v => `
-            <div class="history-card">
-              <strong>${v.title}</strong> - <em>${new Date(v.date).toLocaleString()}</em><br />
-              <small>Saved: ${new Date(v.saved_at).toLocaleString()}</small>
-              <p>${v.summary}</p>
-            </div>
-          `).join("");
-        });
-    }
+  fetch(`http://localhost:8000/reports/${id}/history`, {
+    headers: { Authorization: "Bearer " + token },
+  })
+    .then(res => res.json())
+    .then(history => {
+      const container = document.getElementById(`history-${id}`);
+      container.innerHTML = history.length === 0
+        ? "<p>No history available.</p>"
+        : history.map(v => {
+            const editedBy = v.edited_by && v.edited_by.name ? v.edited_by.name : "Unknown";
+            return `
+              <div class="history-card">
+                <strong>${v.title}</strong> - <em>${new Date(v.date).toLocaleString()}</em><br />
+                <small>Saved: ${new Date(v.saved_at).toLocaleString()}</small><br />
+                <small>Edited by: ${editedBy}</small>
+                <p>${v.summary}</p>
+              </div>
+            `;
+          }).join("");
+    });
+}
 
     function hideHistory(id) {
       document.getElementById(`history-${id}`).innerHTML = "";

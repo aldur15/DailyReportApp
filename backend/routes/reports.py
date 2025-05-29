@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import Date, func
 from .. import models, crud, schemas, database
 from ..auth import get_current_user
@@ -68,7 +68,9 @@ def update_report(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user),
 ):
-    report = db.query(models.DailyReport).filter(models.DailyReport.id == report_id).first()
+    report = db.query(models.DailyReport).options(
+        joinedload(models.DailyReport.versions).joinedload(models.ReportVersion.edited_by)
+    ).filter(models.DailyReport.id == report_id).first()
 
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
@@ -76,13 +78,17 @@ def update_report(
     if not user.is_admin and report.user_id != user.id:
         raise HTTPException(status_code=403, detail="Not your report")
 
+    print(f"Creating version: user_id={user.id}, report_id={report.id}")
+
     version = models.ReportVersion(
         report_id=report.id,
         title=report.title,
         summary=report.summary,
         date=report.date,
+        edited_by_id=user.id  # Track who made the edit
     )
     db.add(version)
+    print(version)
 
     report.title = updated_report.title
     report.summary = updated_report.summary
@@ -94,13 +100,17 @@ def update_report(
     return report
 
 
+
+
 @router.delete("/reports/{report_id}")
 def delete_report(
     report_id: int,
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user)
 ):
-    report = db.query(models.DailyReport).filter(models.DailyReport.id == report_id).first()
+    report = db.query(models.DailyReport).options(
+        joinedload(models.DailyReport.versions).joinedload(models.ReportVersion.edited_by)
+    ).filter(models.DailyReport.id == report_id).first()
 
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
@@ -119,7 +129,10 @@ def get_report_history(
     db: Session = Depends(get_db),
     user: models.User = Depends(get_current_user)
 ):
-    report = db.query(models.DailyReport).filter(models.DailyReport.id == report_id).first()
+    
+    report = db.query(models.DailyReport).options(
+        joinedload(models.DailyReport.versions).joinedload(models.ReportVersion.edited_by)
+    ).filter(models.DailyReport.id == report_id).first()
     if not report:
         raise HTTPException(status_code=404, detail="Report not found")
 

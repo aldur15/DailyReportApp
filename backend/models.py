@@ -26,6 +26,9 @@ class ReportVersion(Base):
     date = Column(DateTime)
     saved_at = Column(DateTime, default=datetime.utcnow)
 
+    edited_by_id = Column(Integer, ForeignKey("users.id"))
+    edited_by = relationship("User")
+
     original = relationship("DailyReport", back_populates="versions")
 
 

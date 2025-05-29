@@ -1,5 +1,26 @@
 from pydantic import BaseModel
 from datetime import datetime
+from typing import Optional
+
+##USERS
+class UserCreate(BaseModel):
+    name: str
+    password: str
+
+class UserOut(BaseModel):
+    id: int
+    name: str
+    is_admin: bool  
+
+    class Config:
+        orm_mode = True
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class MakeAdminRequest(BaseModel):
+    username: str
 
 ##REPORTS
 class ReportCreate(BaseModel):
@@ -32,27 +53,9 @@ class ReportVersionOut(BaseModel):
     summary: str
     date: datetime
     saved_at: datetime
+    edited_by: Optional[UserOut]
 
     class Config:
         orm_mode = True
 
 
-##USERS
-class UserCreate(BaseModel):
-    name: str
-    password: str
-
-class UserOut(BaseModel):
-    id: int
-    name: str
-    is_admin: bool  
-
-    class Config:
-        orm_mode = True
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-class MakeAdminRequest(BaseModel):
-    username: str
