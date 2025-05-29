@@ -57,25 +57,30 @@
       window.location.href = "index.html";
     });
 
-    async function fetchReports() {
-      const userRes = await fetch("http://localhost:8000/users/me", {
-        headers: { Authorization: "Bearer " + token },
-      });
-      if (!userRes.ok) return alert("Error checking user");
+    document.getElementById("report-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const title = document.getElementById("title").value;
+      const summary = document.getElementById("summary").value;
+      const date = document.getElementById("date").value || null;
 
-      const user = await userRes.json();
-      const endpoint = user.is_admin ? "reports" : "reports/mine";
-
-      const res = await fetch(`http://localhost:8000/${endpoint}`, {
-        headers: { Authorization: "Bearer " + token },
+      const res = await fetch("http://localhost:8000/reports", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+        },
+        body: JSON.stringify({ title, summary, date }),
       });
 
       if (res.ok) {
-        renderReports(await res.json());
+        alert("Report submitted!");
+        document.getElementById("report-form").reset();
+        checkIfAdmin();
       } else {
-        document.getElementById("report-container").innerText = "Failed to load reports.";
+        const data = await res.json();
+        alert("Error submitting report: " + (data.detail || JSON.stringify(data)));
       }
-    }
+    });
 
     function renderReports(data) {
       const container = document.getElementById("report-container");
@@ -121,7 +126,7 @@
         if (data.detail) alert("Error updating report: " + JSON.stringify(data));
         else {
           alert("Report updated");
-          fetchReports();
+          checkIfAdmin();
         }
       });
     }
@@ -133,17 +138,19 @@
         .then(res => res.json())
         .then(history => {
           const container = document.getElementById(`history-${id}`);
-          container.innerHTML = history.length === 0 ? "<p>No history available.</p>" : history.map(v => {
-            const editedBy = v.edited_by && v.edited_by.name ? v.edited_by.name : "Unknown";
-            return `
-              <div class="history-card">
-                <strong>${v.title}</strong> - <em>${new Date(v.date).toLocaleString()}</em><br />
-                <small>Saved: ${new Date(v.saved_at).toLocaleString()}</small><br />
-                <small>Edited by: ${editedBy}</small>
-                <p>${v.summary}</p>
-              </div>
-            `;
-          }).join("");
+          container.innerHTML = history.length === 0
+            ? "<p>No history available.</p>"
+            : history.map(v => {
+                const editedBy = v.edited_by && v.edited_by.name ? v.edited_by.name : "Unknown";
+                return `
+                  <div class="history-card">
+                    <strong>${v.title}</strong> - <em>${new Date(v.date).toLocaleString()}</em><br />
+                    <small>Saved: ${new Date(v.saved_at).toLocaleString()}</small><br />
+                    <small>Edited by: ${editedBy}</small>
+                    <p>${v.summary}</p>
+                  </div>
+                `;
+              }).join("");
         });
     }
 
@@ -151,18 +158,41 @@
       document.getElementById(`history-${id}`).innerHTML = "";
     }
 
-    const debounce = (func, delay) => {
-      clearTimeout(window.debounceTimer);
-      window.debounceTimer = setTimeout(func, delay);
-    };
+    function deleteReport(id) {
+      if (!confirm("Are you sure you want to delete this report?")) return;
 
-    const triggerFilter = () => {
-      const username = document.getElementById("search-username").value;
-      const title = document.getElementById("search-title").value;
-      const date = document.getElementById("search-date").value;
-      const month = document.getElementById("search-month").value;
-      fetchFilteredReports(username, title, date, month);
-    };
+      fetch(`http://localhost:8000/reports/${id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: "Bearer " + token,
+        },
+      })
+        .then(res => {
+          if (res.ok) {
+            alert("Report deleted.");
+            checkIfAdmin();
+          } else {
+            return res.json().then(data => {
+              alert("Error deleting report: " + (data.detail || JSON.stringify(data)));
+            });
+          }
+        })
+        .catch(err => alert("Request failed: " + err));
+    }
+
+    async function fetchReports() {
+      const res = await fetch("http://localhost:8000/reports", {
+        headers: { Authorization: "Bearer " + token },
+      });
+      res.ok ? renderReports(await res.json()) : document.getElementById("report-container").innerText = "Failed to load reports.";
+    }
+
+    async function fetchMyReports() {
+      const res = await fetch("http://localhost:8000/reports/mine", {
+        headers: { Authorization: "Bearer " + token },
+      });
+      res.ok ? renderReports(await res.json()) : document.getElementById("report-container").innerText = "Failed to load your reports.";
+    }
 
     async function fetchFilteredReports(username, title, date, month) {
       const params = new URLSearchParams();
@@ -179,85 +209,56 @@
       });
       res.ok ? renderReports(await res.json()) : alert("Error fetching filtered reports");
     }
-    
-    ["search-username", "search-title", "search-date", "search-month"].forEach(id => {
-      document.getElementById(id)?.addEventListener("input", () => debounce(triggerFilter, 300));
-    });
 
-    document.getElementById("clear-filters")?.addEventListener("click", () => {
+    document.getElementById("clear-filters").addEventListener("click", () => {
       ["search-username", "search-title", "search-date", "search-month"].forEach(id => document.getElementById(id).value = "");
       fetchReports();
     });
 
-    document.getElementById("show-all")?.addEventListener("click", fetchReports);
-    document.getElementById("hide-all")?.addEventListener("click", () => {
+    document.getElementById("show-all").addEventListener("click", fetchReports);
+    document.getElementById("hide-all").addEventListener("click", () => {
       document.getElementById("report-container").innerHTML = "";
     });
 
-    document.getElementById("report-form").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const title = document.getElementById("title").value;
-      const summary = document.getElementById("summary").value;
-      const date = document.getElementById("date").value || null;
-      const res = await fetch("http://localhost:8000/reports", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + token,
-        },
-        body: JSON.stringify({ title, summary, date }),
-      });
-      if (res.ok) {
-        alert("Report submitted!");
-        document.getElementById("report-form").reset();
-        fetchReports();
-      } else {
-        alert("Error submitting report: " + JSON.stringify(await res.json()));
-      }
+    let debounceTimer;
+    const debounce = (func, delay) => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(func, delay);
+    };
+
+    const triggerFilter = () => {
+      const username = document.getElementById("search-username").value;
+      const title = document.getElementById("search-title").value;
+      const date = document.getElementById("search-date").value;
+      const month = document.getElementById("search-month").value;
+      fetchFilteredReports(username, title, date, month);
+    };
+
+    ["search-username", "search-title", "search-date", "search-month"].forEach(id => {
+      document.getElementById(id).addEventListener("input", () => debounce(triggerFilter, 300));
     });
 
-    document.getElementById("make-admin-form")?.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const username = document.getElementById("promote-username").value;
-      const res = await fetch("http://localhost:8000/make-admin", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + token,
-        },
-        body: JSON.stringify({ username }),
-      });
-      if (res.ok) {
-        alert((await res.json()).message);
-        document.getElementById("make-admin-form").reset();
-      } else {
-        alert("Error: " + JSON.stringify(await res.json()));
-      }
-    });
-
-    document.getElementById("date").valueAsDate = new Date();
-
-    function deleteReport(id) {
-      if (!confirm("Are you sure you want to delete this report?")) return;
-
-      fetch(`http://localhost:8000/reports/${id}`, {
-        method: "DELETE",
+    async function checkIfAdmin() {
+      const res = await fetch("http://localhost:8000/users/me", {
         headers: { Authorization: "Bearer " + token },
-      })
-        .then(res => {
-          if (res.ok) {
-            alert("Report deleted.");
-            fetchReports();
-          } else {
-            return res.json().then(data => {
-              alert("Error deleting report: " + (data.detail || JSON.stringify(data)));
-            });
-          }
-        })
-        .catch(err => alert("Request failed: " + err));
+      });
+      if (res.ok) {
+        const user = await res.json();
+        if (user.is_admin) {
+          document.getElementById("admin-section").style.display = "block";
+          fetchReports();
+        } else {
+          document.getElementById("admin-section").style.display = "none";
+          fetchMyReports();
+        }
+      } else {
+        alert("Session expired");
+        localStorage.removeItem("token");
+        window.location.href = "index.html";
+      }
     }
 
-    fetchReports();
+    checkIfAdmin();
   </script>
 </body>
 </html>
