@@ -780,3 +780,57 @@ body {
 .App-link {
   color: var(--neuro-accent);
 }
+
+.report-card {
+  background: var(--neuro-bg);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--neuro-shadow-raised);
+  padding: var(--space-6);
+  transition: all var(--transition-normal);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  color: var(--neuro-text);
+}
+
+.report-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 30px 30px 90px var(--neuro-shadow-dark), -30px -30px 90px var(--neuro-shadow-light);
+}
+
+.report-card-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--neuro-text-dark);
+}
+
+.report-card-subtitle {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--neuro-text-light);
+}
+
+.report-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  font-size: 0.875rem;
+  color: var(--neuro-text);
+}
+
+.report-card-badge {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  background: linear-gradient(145deg, #ffe8cc, #ffcc99);
+  color: #cc5500;
+  font-weight: 600;
+  box-shadow: var(--neuro-shadow-subtle);
+}
+
+.report-card-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-4);
+  font-size: 0.875rem;
+  color: var(--neuro-text-light);
+}
