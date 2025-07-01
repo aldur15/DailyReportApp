@@ -20,7 +20,7 @@ const debounce = (func, delay) => {
 };
 
 
-const SearchFilters = ({ onFilter, onClear, onShowAll, onHideAll }) => {
+const SearchFilters = ({ onFilter, onClear, onShowAll, onHideAll, isAdmin }) => {
 
   const [filters, setFilters] = useState({
 
@@ -80,21 +80,18 @@ const SearchFilters = ({ onFilter, onClear, onShowAll, onHideAll }) => {
 
       </h3>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+      <div className={`grid grid-cols-1 md:grid-cols-2 ${isAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-4 mb-4`}>
 
-        <input
-
-          type="text"
-
-          placeholder="Search by username"
-
-          value={filters.username}
-
-          onChange={(e) => handleFilterChange('username', e.target.value)}
-
-          className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
-
-        />
+        {/* Only show username search for admins */}
+        {isAdmin && (
+          <input
+            type="text"
+            placeholder="Search by username"
+            value={filters.username}
+            onChange={(e) => handleFilterChange('username', e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500"
+          />
+        )}
 
         <input
 

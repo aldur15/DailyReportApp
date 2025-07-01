@@ -60,6 +60,40 @@ def search_reports(
 
     return query.all()
 
+@router.get("/reports/mine/search", response_model=list[schemas.ReportOut])
+def search_my_reports(
+    date: str = Query(default=None),
+    title: str = Query(default=None),
+    month: int = Query(default=None),
+    year: int = Query(default=None),
+    db: Session = Depends(get_db),
+    user: models.User = Depends(get_current_user)
+):
+    # Start with user's own reports only
+    query = db.query(models.DailyReport).filter(models.DailyReport.user_id == user.id)
+    
+    if date:
+        try:
+            parsed_date = datetime.strptime(date, "%Y-%m-%d").date()
+            query = query.filter(func.date(models.DailyReport.date) == parsed_date)
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid date format. Use YYYY-MM-DD")
+    
+    if title:
+        query = query.filter(models.DailyReport.title.ilike(f"%{title}%"))
+    
+    # Handle month/year filtering
+    if month and year:
+        query = query.filter(
+            extract('month', models.DailyReport.date) == month,
+            extract('year', models.DailyReport.date) == year
+        )
+    elif month:
+        query = query.filter(extract('month', models.DailyReport.date) == month)
+    elif year:
+        query = query.filter(extract('year', models.DailyReport.date) == year)
+    
+    return query.all()
 
 @router.put("/reports/{report_id}", response_model=schemas.ReportOut)
 def update_report(

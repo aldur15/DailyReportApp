@@ -86,7 +86,12 @@ const Dashboard = ({ token, onLogout }) => {
     });
 
     try {
-      const res = await fetch(`${API_BASE}/reports/search?${params.toString()}`, {
+      // Use different endpoints based on user role
+      const endpoint = user?.is_admin 
+        ? `${API_BASE}/reports/search?${params.toString()}`
+        : `${API_BASE}/reports/mine/search?${params.toString()}`;
+        
+      const res = await fetch(endpoint, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -156,6 +161,7 @@ const Dashboard = ({ token, onLogout }) => {
               onClear={handleClearFilters}
               onShowAll={handleShowAll}
               onHideAll={handleHideAll}
+              isAdmin={user?.is_admin} // Pass admin status to SearchFilters
             />
             
             <div className="space-y-4">
