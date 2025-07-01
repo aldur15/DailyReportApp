@@ -1,6 +1,8 @@
 import React from 'react';
 import {User, Search, Plus} from 'lucide-react';
 
+import "./Components.css"
+
 const Navigation = ({ currentPage, onPageChange, isAdmin }) => {
   const navItems = [
     { id: 'create', label: 'Create Report', icon: Plus },

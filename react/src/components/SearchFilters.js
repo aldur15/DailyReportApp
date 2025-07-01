@@ -1,6 +1,8 @@
 import React, { useState, useCallback } from 'react';
 import { Search,  Filter, Eye, EyeOff } from 'lucide-react';
 
+import "./Components.css"
+
 //import debounce from './utils/debounce';
 
 const debounce = (func, delay) => {

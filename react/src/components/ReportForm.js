@@ -1,6 +1,8 @@
 import React, { useState} from 'react';
 import { Plus} from 'lucide-react';
 
+import "./Components.css"
+
 const API_BASE = 'http://localhost:8000';
 
 const ReportForm = ({ token, onReportSubmitted }) => {

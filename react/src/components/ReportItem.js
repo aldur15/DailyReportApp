@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { Edit, History, Trash2, User, Clock, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 
+import "./Components.css"
+
 const API_BASE = 'http://localhost:8000';
 
 const ReportItem = ({ report, token, onUpdate, onDelete }) => {

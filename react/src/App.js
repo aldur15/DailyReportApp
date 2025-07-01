@@ -1,61 +1,9 @@
 import React, { useState} from 'react';
-//import { LogIn, LogOut, User, Search, Calendar, Filter, Plus, Edit, History, Trash2, Eye, EyeOff } from 'lucide-react';
-
-//Main Component Import
 
 import Dashboard from './components/Dashboard';
 import LoginForm from './components/LoginForm';
 
-
-
-
-//Utils Import
-
-
 import "./App.css"
-
-//const API_BASE = 'http://localhost:8000';
-
-
-
-
-// Utility functions
-
-
-
-
-
-// Login Component
-
-
-
-
-// Report Form Component
-
-
-
-// Search/Filter Component
-
-
-
-
-
-// Report Item Component
-
-
-
-
-
-// Admin Section Component
-
-
-
-
-
-// Main Dashboard Component
-
-
-// Main App Component
 
 const App = () => {
 

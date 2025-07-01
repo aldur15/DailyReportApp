@@ -7,6 +7,8 @@ import ReportForm from './ReportForm';
 import ReportItem from './ReportItem';
 import SearchFilters from './SearchFilters';
 
+import "./Components.css"
+
 const API_BASE = 'http://localhost:8000';
 
 
