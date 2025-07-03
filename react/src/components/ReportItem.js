@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Edit, History, Trash2, User, Clock, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 
-import "./Components.css"
+import './styling/ReportItem.css';
 
 const API_BASE = 'http://localhost:8000';
 
@@ -83,130 +83,80 @@ const ReportItem = ({ report, token, onUpdate, onDelete }) => {
   const displaySummary = isExpanded || !isLongSummary ? report.summary : report.summary?.substring(0, 200) + '...';
 
   return (
-    <div className="report-card group">
-      {/* Header Section */}
-      <div className="report-card-header">
-        <div className="report-card-title-section">
-          <h4 className="report-card-title">{report.title}</h4>
-          <div className="report-card-meta">
-            <div className="neuro-meta-item">
-              <Calendar className="w-4 h-4" />
-              <span>{reportDate.toLocaleDateString()}</span>
-            </div>
-            <div className="neuro-meta-item">
-              <Clock className="w-4 h-4" />
-              <span>{reportDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-            </div>
-            <div className="neuro-meta-item">
-              <User className="w-4 h-4" />
-              <span>{username}</span>
-            </div>
+    <div className="report-item">
+      <div className="report-header">
+        <h3 className="report-title">{report.title}</h3>
+        <div className="report-actions">
+          <button className="report-button" onClick={handleEdit}>
+            <Edit size={16} />
+          </button>
+          <button className="report-button" onClick={handleDelete}>
+            <Trash2 size={16} />
+          </button>
+          <button className="report-button" onClick={toggleHistory}>
+            <History size={16} />
+          </button>
+          <button className="report-button" onClick={() => setIsExpanded(!isExpanded)}>
+            {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+        </div>
+      </div>
+
+      {isExpanded && (
+        <div className="report-body">
+          <p className="report-summary">{displaySummary}</p>
+          <div className="report-meta">
+            <span><Calendar size={14} /> {reportDate.toLocaleDateString()}</span>
+            <span><Clock size={14} /> {reportDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+            <span><User size={14} /> {username}</span>
             {report.edited && (
-              <div className="neuro-badge bg-orange-100">
-                Edited
-              </div>
+              <span className="report-edited-badge">Edited</span>
             )}
           </div>
         </div>
-        
-        {/* Action Buttons */}
-        <div className="report-card-actions">
-          <button
-            onClick={handleEdit}
-            className="neuro-btn-icon neuro-btn-edit"
-            title="Edit Report"
-          >
-            <Edit className="w-4 h-4" />
-          </button>
-          <button
-            onClick={toggleHistory}
-            className={`neuro-btn-icon neuro-btn-history ${showHistory ? 'active' : ''}`}
-            title="View History"
-          >
-            <History className="w-4 h-4" />
-          </button>
-          <button
-            onClick={handleDelete}
-            className="neuro-btn-icon neuro-btn-delete"
-            title="Delete Report"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+      )}
 
-      {/* Summary Section */}
-      <div className="report-card-content">
-        <p className="report-card-summary">{displaySummary}</p>
-        {isLongSummary && (
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="neuro-btn-expand"
-          >
-            {isExpanded ? (
-              <>
-                <ChevronUp className="w-4 h-4" />
-                Show Less
-              </>
-            ) : (
-              <>
-                <ChevronDown className="w-4 h-4" />
-                Show More
-              </>
-            )}
-          </button>
-        )}
-      </div>
-
-      {/* History Section */}
       {showHistory && (
-        <div className="report-card-history">
-          <div className="neuro-divider"></div>
-          <div className="report-card-history-header">
-            <h5 className="report-card-history-title">Version History</h5>
-          </div>
-          
+        <div className="report-history">
+          <h4>Edit History</h4>
           {loadingHistory ? (
-            <div className="report-card-history-loading">
-              <div className="neuro-loader"></div>
-              <span>Loading history...</span>
-            </div>
+            <p>Loading history...</p>
           ) : history.length === 0 ? (
-            <div className="report-card-history-empty">
-              <History className="w-8 h-8 text-gray-300" />
+            <div className="report-history-empty">
+              <History size={32} />
               <p>No version history available</p>
             </div>
           ) : (
-            <div className="report-card-history-list">
+            <ul>
               {history.map((version, index) => {
                 const editedBy = version.edited_by && version.edited_by.name ? version.edited_by.name : 'Unknown';
                 const versionDate = new Date(version.date);
                 const savedDate = new Date(version.saved_at);
                 
                 return (
-                  <div key={index} className="neuro-history-item">
-                    <div className="neuro-history-header">
-                      <h6 className="neuro-history-title">{version.title}</h6>
-                      <div className="neuro-history-date">
-                        <Calendar className="w-3 h-3" />
+                  <li key={index}>
+                    <div className="history-item-header">
+                      <h6 className="history-title">{version.title}</h6>
+                      <div className="history-date">
+                        <Calendar size={12} />
                         <span>{versionDate.toLocaleDateString()}</span>
                       </div>
                     </div>
-                    <p className="neuro-history-summary">{version.summary}</p>
-                    <div className="neuro-history-meta">
-                      <div className="neuro-history-meta-item">
-                        <Clock className="w-3 h-3" />
+                    <p className="history-summary">{version.summary}</p>
+                    <div className="history-meta">
+                      <div className="history-meta-item">
+                        <Clock size={12} />
                         <span>Saved: {savedDate.toLocaleString()}</span>
                       </div>
-                      <div className="neuro-history-meta-item">
-                        <User className="w-3 h-3" />
+                      <div className="history-meta-item">
+                        <User size={12} />
                         <span>By: {editedBy}</span>
                       </div>
                     </div>
-                  </div>
+                  </li>
                 );
               })}
-            </div>
+            </ul>
           )}
         </div>
       )}

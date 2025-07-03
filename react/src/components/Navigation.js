@@ -1,41 +1,60 @@
 import React from 'react';
 import {User, Search, Plus} from 'lucide-react';
 
-import "./Components.css"
+import "./styling/Navigation.css"
 
-const Navigation = ({ currentPage, onPageChange, isAdmin }) => {
+const Navigation = ({ currentPage, onPageChange, isAdmin = false }) => {
   const navItems = [
-    { id: 'create', label: 'Create Report', icon: Plus },
-    { id: 'reports', label: 'View Reports', icon: Search },
-    ...(isAdmin ? [{ id: 'admin', label: 'Admin Panel', icon: User }] : [])
+    { 
+      id: 'create', 
+      label: 'Create Report', 
+      icon: Plus,
+      description: 'Create new report'
+    },
+    { 
+      id: 'reports', 
+      label: 'View Reports', 
+      icon: Search,
+      description: 'Browse all reports'
+    },
+    ...(isAdmin ? [{ 
+      id: 'admin', 
+      label: 'Admin Panel', 
+      icon: User,
+      description: 'Administrative tools'
+    }] : [])
   ];
 
+  const handleNavigation = (itemId) => {
+    if (typeof onPageChange === 'function') {
+      onPageChange(itemId);
+    }
+  };
+
   return (
-    <nav className="bg-white shadow-sm border-b mb-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex space-x-8">
+    <nav className="navigation-container">
+      <div className="navigation-wrapper">
+        <div className="navigation-content">
           {navItems.map((item) => {
-            const Icon = item.icon;
-            return (
-              <button
-                key={item.id}
-                onClick={() => onPageChange(item.id)}
-                className={`flex items-center gap-2 py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
-                  currentPage === item.id
-                    ? 'border-indigo-500 text-indigo-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {item.label}
-              </button>
-            );
-          })}
+  const Icon = item.icon;
+  const isActive = currentPage === item.id;
+  return (
+    <div
+      key={item.id}
+      className={`navigation-item ${isActive ? 'active' : ''}`}
+      onClick={() => handleNavigation(item.id)}
+      title={item.description}
+    >
+      <Icon size={20} />
+      <div className="navigation-label">{item.label}</div>
+    </div>
+  );
+})}
+
         </div>
       </div>
     </nav>
   );
 };
-
 
 export default Navigation;

@@ -7,11 +7,9 @@ import ReportForm from './ReportForm';
 import ReportItem from './ReportItem';
 import SearchFilters from './SearchFilters';
 
-import "./Components.css"
+import "./styling/Dashboard.css"
 
 const API_BASE = 'http://localhost:8000';
-
-
 
 const Dashboard = ({ token, onLogout }) => {
   const [user, setUser] = useState(null);
@@ -146,7 +144,7 @@ const Dashboard = ({ token, onLogout }) => {
     switch (currentPage) {
       case 'create':
         return (
-          <div>
+          <div className="section-card">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Create Daily Report</h2>
             <ReportForm token={token} onReportSubmitted={handleReportSubmitted} />
           </div>
@@ -154,7 +152,7 @@ const Dashboard = ({ token, onLogout }) => {
       
       case 'reports':
         return (
-          <div>
+          <div className="section-card">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Daily Reports</h2>
             <SearchFilters
               onFilter={fetchFilteredReports}
@@ -187,7 +185,7 @@ const Dashboard = ({ token, onLogout }) => {
       
       case 'admin':
         return user?.is_admin ? (
-          <div>
+          <div className="section-card">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">Admin Panel</h2>
             <AdminSection token={token} onPromoteSuccess={checkUser} />
           </div>
@@ -199,37 +197,24 @@ const Dashboard = ({ token, onLogout }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">Welcome, {user?.name}</span>
-              {user?.is_admin && (
-                <span className="px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full">Admin</span>
-              )}
-              <button
-                onClick={onLogout}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <LogOut className="w-4 h-4" />
-                Logout
-              </button>
-            </div>
-          </div>
+    <div className="dashboard-container">
+      <div className="dashboard-header">
+        <h1>Welcome, {user?.name || "User"}</h1>
+        <div className="logout-button" onClick={onLogout}>
+          <LogOut size={20} />
+          Logout
         </div>
-      </header>
+      </div>
 
-      <Navigation 
-        currentPage={currentPage} 
-        onPageChange={setCurrentPage} 
-        isAdmin={user?.is_admin} 
+      <Navigation
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+        isAdmin={user?.is_admin}
       />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="dashboard-content">
         {renderCurrentPage()}
-      </main>
+      </div>
     </div>
   );
 };

@@ -1,0 +1,68 @@
+/* AdminSection.css (or extend Components.css) */
+
+.admin-section {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.admin-card {
+  background: #e4ebf5;
+  border-radius: 25px;
+  padding: 1.5rem;
+  box-shadow: 6px 6px 12px #c5cbd8, -6px -6px 12px #ffffff;
+}
+
+.admin-card h2 {
+  color: #4b5d73;
+  margin-bottom: 1rem;
+}
+
+.input-group {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.admin-input {
+  background: #e4ebf5;
+  padding: 0.75rem 1rem;
+  border: none;
+  border-radius: 50px;
+  box-shadow: inset 4px 4px 8px #c5cbd8, inset -4px -4px 8px #ffffff;
+  width: 100%;
+  font-size: 1rem;
+  color: #4b5d73;
+}
+
+.admin-button {
+  background: #e4ebf5;
+  padding: 0.75rem 1.5rem;
+  border-radius: 50px;
+  box-shadow: 6px 6px 12px #c5cbd8, -6px -6px 12px #ffffff;
+  cursor: pointer;
+  color: #4b5d73;
+  font-weight: bold;
+  border: none;
+  transition: all 0.2s ease;
+}
+
+.admin-button:hover {
+  box-shadow: inset 4px 4px 8px #c5cbd8, inset -4px -4px 8px #ffffff;
+}
+
+.analytics-controls {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.analytics-select {
+  padding: 0.5rem 1rem;
+  border-radius: 50px;
+  background: #e4ebf5;
+  border: none;
+  box-shadow: inset 3px 3px 6px #c5cbd8, inset -3px -3px 6px #ffffff;
+  color: #4b5d73;
+}

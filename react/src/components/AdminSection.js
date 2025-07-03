@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-import "./Components.css"
+import './styling/AdminSection.css'; // Updated CSS import
 
 const API_BASE = 'http://localhost:8000';
 
@@ -102,29 +102,31 @@ const AdminSection = ({ token, onPromoteSuccess }) => {
   }, [reportsPeriod, selectedYear, selectedMonth, selectedWeek]);
 
   const handlePromote = async () => {
-    if (!username) return;
-    setLoading(true);
+    if (!username.trim()) return;
 
+    setLoading(true);
     try {
-      const res = await fetch(`${API_BASE}/admin/promote`, {
+      const res = await fetch(`${API_BASE}/users/promote`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify({ username }),
       });
 
       if (res.ok) {
-        console.log('User promoted to admin!'); // TODO: Replace with user-friendly UI feedback
         setUsername('');
-        onPromoteSuccess();
+        if (typeof onPromoteSuccess === 'function') {
+          onPromoteSuccess();
+        }
+        alert('User promoted successfully.');
       } else {
-        const data = await res.json();
-        console.log('Error promoting user: ' + (data.detail || JSON.stringify(data))); // TODO: Replace with user-friendly UI feedback));
+        const err = await res.json();
+        alert(`Failed: ${err.detail || 'Unknown error'}`);
       }
-    } catch (err) {
-      console.log('Network error: ' + err.message); // TODO: Replace with user-friendly UI feedback
+    } catch (e) {
+      alert('Network error.');
     } finally {
       setLoading(false);
     }
@@ -169,117 +171,98 @@ const AdminSection = ({ token, onPromoteSuccess }) => {
   };
 
   return (
-    <div className="bg-orange-50 rounded-lg shadow-md p-6 mb-6 border border-orange-200">
-      <h3 className="text-lg font-semibold mb-4 text-orange-800">Admin Panel</h3>
-      
-      {/* User Promotion Section */}
-      <div className="mb-6">
-        <h4 className="text-md font-medium mb-3 text-orange-700">User Management</h4>
-        <div className="flex gap-4">
+    <div className="admin-section">
+      <div className="admin-card">
+        <h2>Promote User to Admin</h2>
+        <div className="input-group">
           <input
+            className="admin-input"
             type="text"
-            placeholder="Username to promote"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="flex-1 px-4 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500"
-            required
-          />
-          <button
-            onClick={handlePromote}
+            placeholder="Enter username"
             disabled={loading}
-            className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 transition-colors"
-          >
-            {loading ? 'Promoting...' : 'Make Admin'}
+          />
+          <button className="admin-button" onClick={handlePromote} disabled={loading}>
+            {loading ? 'Promoting...' : 'Promote'}
           </button>
         </div>
       </div>
 
-      {/* Reports Analytics Section */}
-      <div>
-        <h4 className="text-md font-medium mb-3 text-orange-700">Reports Analytics</h4>
-        <div className="bg-white rounded-lg p-4 border border-orange-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-3 flex-wrap">
-              <label className="text-sm font-medium text-gray-700">Period:</label>
-              <select
-                value={reportsPeriod}
-                onChange={(e) => handlePeriodChange(e.target.value)}
-                className="px-3 py-1 border border-orange-300 rounded focus:ring-2 focus:ring-orange-500 text-sm"
-              >
-                <option value="week">Week</option>
-                <option value="month">Month</option>
-                <option value="year">Year</option>
-              </select>
-              
-              {/* Year selector (always shown) */}
-              <label className="text-sm font-medium text-gray-700">Year:</label>
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-                className="px-3 py-1 border border-orange-300 rounded focus:ring-2 focus:ring-orange-500 text-sm"
-              >
-                {generateYears().map(year => (
-                  <option key={year} value={year}>{year}</option>
-                ))}
-              </select>
-              
-              {/* Month selector (shown for week and month periods) */}
-              {(reportsPeriod === 'month' || reportsPeriod === 'week') && (
-                <>
-                  <label className="text-sm font-medium text-gray-700">Month:</label>
-                  <select
-                    value={selectedMonth}
-                    onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-                    className="px-3 py-1 border border-orange-300 rounded focus:ring-2 focus:ring-orange-500 text-sm"
-                  >
-                    <option value={1}>January</option>
-                    <option value={2}>February</option>
-                    <option value={3}>March</option>
-                    <option value={4}>April</option>
-                    <option value={5}>May</option>
-                    <option value={6}>June</option>
-                    <option value={7}>July</option>
-                    <option value={8}>August</option>
-                    <option value={9}>September</option>
-                    <option value={10}>October</option>
-                    <option value={11}>November</option>
-                    <option value={12}>December</option>
-                  </select>
-                </>
-              )}
-              
-              {/* Week selector (shown only for week period) */}
-              {reportsPeriod === 'week' && (
-                <>
-                  <label className="text-sm font-medium text-gray-700">Week:</label>
-                  <select
-                    value={selectedWeek}
-                    onChange={(e) => setSelectedWeek(parseInt(e.target.value))}
-                    className="px-3 py-1 border border-orange-300 rounded focus:ring-2 focus:ring-orange-500 text-sm"
-                  >
-                    {generateWeeks().map(week => (
-                      <option key={week} value={week}>Week {week}</option>
-                    ))}
-                  </select>
-                </>
-              )}
-            </div>
-            <button
-              onClick={fetchAllReports}
-              disabled={reportsLoading}
-              className="px-4 py-1 bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50 transition-colors text-sm"
+      <div className="admin-card">
+        <h2>Reports Overview</h2>
+        <div className="analytics-controls">
+          <select
+            className="analytics-select"
+            value={reportsPeriod}
+            onChange={(e) => handlePeriodChange(e.target.value)}
+          >
+            <option value="week">Week</option>
+            <option value="month">Month</option>
+            <option value="year">Year</option>
+          </select>
+
+          {/* Year selector (always shown) */}
+          <select
+            className="analytics-select"
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+          >
+            {generateYears().map(year => (
+              <option key={year} value={year}>{year}</option>
+            ))}
+          </select>
+
+          {/* Month selector (shown for week and month periods) */}
+          {(reportsPeriod === 'month' || reportsPeriod === 'week') && (
+            <select
+              className="analytics-select"
+              value={selectedMonth}
+              onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
             >
-              {reportsLoading ? 'Refreshing...' : 'Refresh'}
-            </button>
+              <option value={1}>January</option>
+              <option value={2}>February</option>
+              <option value={3}>March</option>
+              <option value={4}>April</option>
+              <option value={5}>May</option>
+              <option value={6}>June</option>
+              <option value={7}>July</option>
+              <option value={8}>August</option>
+              <option value={9}>September</option>
+              <option value={10}>October</option>
+              <option value={11}>November</option>
+              <option value={12}>December</option>
+            </select>
+          )}
+
+          {/* Week selector (shown only for week period) */}
+          {reportsPeriod === 'week' && (
+            <select
+              className="analytics-select"
+              value={selectedWeek}
+              onChange={(e) => setSelectedWeek(parseInt(e.target.value))}
+            >
+              {generateWeeks().map(week => (
+                <option key={week} value={week}>Week {week}</option>
+              ))}
+            </select>
+          )}
+
+          <button
+            className="admin-button"
+            onClick={fetchAllReports}
+            disabled={reportsLoading}
+          >
+            {reportsLoading ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+
+        <div style={{ textAlign: 'center', marginTop: '1rem' }}>
+          <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#4b5d73', marginBottom: '0.5rem' }}>
+            {reportsLoading ? '...' : reportCount}
           </div>
-          
-          <div className="text-center">
-            <div className="text-3xl font-bold text-orange-600 mb-1">
-              {reportsLoading ? '...' : reportCount}
-            </div>
-            <div className="text-sm text-gray-600">
-              Reports created in {getPeriodLabel()}
-            </div>
+          <div style={{ fontSize: '0.9rem', color: '#6b7280' }}>
+            Reports created in {getPeriodLabel()}
           </div>
         </div>
       </div>

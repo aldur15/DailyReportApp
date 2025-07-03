@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { LogIn, User } from 'lucide-react';
-import "./Components.css";
+import './styling/LoginForm.css'; // or LoginForm.css if separated
 
 const API_BASE = 'http://localhost:8000';
 
@@ -42,54 +42,46 @@ const LoginForm = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-lg p-8 w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="bg-indigo-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-            <User className="w-8 h-8 text-indigo-600" />
-          </div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            {isRegister ? 'Register' : 'Login'}
-          </h2>
+    <div className="login-container">
+      <div className="login-card">
+        <div className="login-header">
+          {isRegister ? <User size={32} /> : <LogIn size={32} />}
+          <h2>{isRegister ? 'Register' : 'Login'}</h2>
         </div>
 
-        <div className="space-y-6">
-          <input
-            type="text"
-            placeholder="Name"
-            value={formData.name}
-            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            required
-          />
+        <input
+          className="login-input"
+          type="text"
+          placeholder="Name"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          disabled={loading}
+          required
+        />
 
-          <input
-            type="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            required
-          />
+        <input
+          className="login-input"
+          type="password"
+          placeholder="Password"
+          value={formData.password}
+          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+          disabled={loading}
+          required
+        />
 
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
-          >
-            <LogIn className="w-4 h-4" />
-            {loading ? 'Processing...' : (isRegister ? 'Register' : 'Login')}
-          </button>
+        <button 
+          className="login-button" 
+          onClick={handleSubmit} 
+          disabled={loading}
+        >
+          <LogIn className="w-4 h-4" />
+          {loading ? 'Processing...' : (isRegister ? 'Register' : 'Login')}
+        </button>
 
-          <button
-            type="button"
-            onClick={() => setIsRegister(!isRegister)}
-            className="w-full text-indigo-600 text-sm mt-2 underline hover:text-indigo-800 transition"
-          >
-            {isRegister
-              ? 'Already have an account? Log in'
-              : "Don't have an account? Register"}
-          </button>
+        <div className="login-toggle" onClick={() => setIsRegister(!isRegister)}>
+          {isRegister
+            ? 'Already have an account? Log in'
+            : "Don't have an account? Register"}
         </div>
       </div>
     </div>
